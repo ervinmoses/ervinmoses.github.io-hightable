@@ -161,7 +161,7 @@ cardGamesBtn.addEventListener('click', () => switchView('lobby'));
 
 // ---- Lobby Logic ----
 function generateRoomCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+    return Math.floor(1000 + Math.random() * 9000).toString(); // 4 digits
 }
 
 createGameBtn.addEventListener('click', async () => {
