@@ -401,12 +401,38 @@ if (giveCardBtn) {
             return;
         }
 
-        const stateRef = ref(db, `rooms/${currentRoom}/gameState`);
-        const snapshot = await get(stateRef);
-        let state = snapshot.val();
+        const roomRef = ref(db, `rooms/${currentRoom}`);
+        const snapshot = await get(roomRef);
+        const roomData = snapshot.val();
+        let state = roomData.gameState;
+        let players = roomData.players;
         
-        if (state.deck.length === 0) {
+        if (!state || state.deck.length === 0) {
             showAlert('Error', 'Deck is empty!');
+            return;
+        }
+
+        const handLen = state.hands[targetId] ? state.hands[targetId].length : 0;
+        
+        // Strict Validation
+        let activeCardCounts = [];
+        Object.keys(players).forEach(id => {
+            if (!state.safePlayers || state.safePlayers[id] === undefined) {
+                activeCardCounts.push((state.hands[id] || []).length);
+            }
+        });
+        const minActiveCards = activeCardCounts.length > 0 ? Math.min(...activeCardCounts) : 5;
+        
+        if (state.safePlayers && state.safePlayers[targetId] !== undefined) {
+            showAlert('Error', 'Player is already SAFE!');
+            return;
+        }
+        if (handLen >= 5) {
+            showAlert('Error', 'Player has MAX cards!');
+            return;
+        }
+        if (handLen > minActiveCards) {
+            showAlert('Error', 'Wait for other players to receive their cards first!');
             return;
         }
 
@@ -414,7 +440,7 @@ if (giveCardBtn) {
         if (!state.hands[targetId]) state.hands[targetId] = [];
         state.hands[targetId].push(card);
 
-        await update(stateRef, {
+        await update(ref(db, `rooms/${currentRoom}/gameState`), {
             deck: state.deck,
             [`hands/${targetId}`]: state.hands[targetId]
         });
