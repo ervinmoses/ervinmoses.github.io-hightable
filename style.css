@@ -589,6 +589,9 @@ select {
     font-size: 0.65rem;
     color: var(--text-color);
     line-height: 1.2;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* List Style for Rows 3,4,5 */
