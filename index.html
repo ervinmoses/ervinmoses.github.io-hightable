@@ -112,20 +112,32 @@
                         <button class="btn dm-btn" data-cond="middle">Middle</button>
                         <button class="btn dm-btn" data-cond="lower">Lower</button>
                     </div>
-                    <button id="revealDeathmatchBtn" class="btn primary full-width mt-10 hidden">Reveal & End</button>
+                    <button id="revealDeathmatchBtn" class="btn primary full-width mt-10 hidden">Start Deathmatch & Deal</button>
                 </div>
             </div>
 
-            <!-- Player View -->
+            <!-- Player View & Action -->
             <div class="player-status glass">
-                <h3 id="myRoleText">Player: <span id="myPlayerName"></span></h3>
-                <div class="status-indicator">
-                    Total: <span id="myTotal">0</span> <span id="safeIndicator" class="hidden"> (SAFE)</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h3 id="myRoleText">Player: <span id="myPlayerName"></span></h3>
+                    <button id="lockSafeBtn" class="btn primary">Lock In (SAFE)</button>
+                </div>
+                <div class="status-indicator mt-10">
+                    My Total: <span id="myTotal">0</span> <span id="safeIndicator" class="hidden"> (SAFE)</span>
                 </div>
             </div>
             
-            <div class="cards-container" id="myCards">
-                <!-- Cards injected via JS -->
+            <!-- Deathmatch Reveal Area (For tied players only) -->
+            <div id="deathmatchRevealArea" class="hidden glass mt-20 text-center danger-border">
+                <h3 id="dmOpponentsText" class="text-danger">Deathmatch Tie-Breaker</h3>
+                <p>You have received 1 hidden card. Reveal it when ready.</p>
+                <button id="myRevealBtn" class="btn primary mt-10">Reveal My Card</button>
+            </div>
+
+            <!-- Shared Table View -->
+            <h3 class="mt-20">The Table:</h3>
+            <div id="tablePlayers" class="table-players-container">
+                <!-- Other players' hands injected via JS -->
             </div>
         </div>
     </div>
@@ -170,8 +182,8 @@
         </div>
     </div>
 
-    <script type="module" src="firebase-config.js?v=2"></script>
-    <script type="module" src="game.js?v=2"></script>
-    <script type="module" src="app.js?v=2"></script>
+    <script type="module" src="firebase-config.js?v=3"></script>
+    <script type="module" src="game.js?v=3"></script>
+    <script type="module" src="app.js?v=3"></script>
 </body>
 </html>
