@@ -84,22 +84,20 @@ modalClose.addEventListener('click', () => {
 });
 
 // ---- Initialization & Splash ----
-document.addEventListener('DOMContentLoaded', () => {
-    // Check Telegram WebApp
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-        tg.expand(); // Expand to full height
-    }
+// Check Telegram WebApp
+const tg = window.Telegram?.WebApp;
+if (tg) {
+    tg.expand(); // Expand to full height
+}
 
-    // Splash Sequence
-    switchView('splash-1');
+// Splash Sequence
+switchView('splash-1');
+setTimeout(() => {
+    switchView('splash-2');
     setTimeout(() => {
-        switchView('splash-2');
-        setTimeout(() => {
-            checkRegistration();
-        }, 3000); // Show splash 2 for 3s
-    }, 2000); // Show splash 1 for 2s
-});
+        checkRegistration();
+    }, 3000); // Show splash 2 for 3s
+}, 2000); // Show splash 1 for 2s
 
 function checkRegistration() {
     // 1. Try local storage
