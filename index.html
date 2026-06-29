@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HighTable Games</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Splash Screen 1 -->
+    <div id="splash-1" class="view active splash">
+        <h1 class="logo-text">Welcome To HighTable Games</h1>
+    </div>
+
+    <!-- Splash Screen 2 -->
+    <div id="splash-2" class="view splash" style="background-image: url('assets/images/21.jpg'); background-size: cover; background-position: center;">
+        <div class="overlay"></div>
+        <p class="warning-text">⚠️ WARNING: The consumption of alcohol by individuals under the age of 21 is strictly prohibited. Play responsibly.</p>
+    </div>
+
+    <!-- Player Registration -->
+    <div id="registration" class="view">
+        <div class="auth-container glass">
+            <h2>Join the Table</h2>
+            <p>Enter your player name to begin</p>
+            <input type="text" id="playerNameInput" placeholder="Player Name" maxlength="20">
+            <button id="registerBtn" class="btn primary">Enter</button>
+        </div>
+    </div>
+
+    <!-- Home Page (Game Menu) -->
+    <div id="home" class="view with-nav">
+        <header class="header">
+            <h2>HighTable Games</h2>
+        </header>
+        <div class="game-list">
+            <div class="game-card" id="cardGamesBtn">
+                <div class="card-content">
+                    <h3>21 Card Game</h3>
+                    <p>The classic game of survival.</p>
+                </div>
+            </div>
+            <div class="game-card locked" id="avalonBtn">
+                <div class="card-content">
+                    <h3>Avalon</h3>
+                    <p>Coming Soon</p>
+                </div>
+            </div>
+            <div class="game-card locked" id="spinWheelBtn">
+                <div class="card-content">
+                    <h3>Spin The Wheel</h3>
+                    <p>Coming Soon</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lobby System (21 Card Game) -->
+    <div id="lobby" class="view with-nav">
+        <header class="header">
+            <button class="back-btn" id="backToHomeBtn">←</button>
+            <h2>21 Lobby</h2>
+        </header>
+        <div class="lobby-actions">
+            <button id="createGameBtn" class="btn primary">Create Host Game</button>
+            <div class="divider"><span>OR</span></div>
+            <input type="text" id="roomCodeInput" placeholder="Enter Room Code" maxlength="6">
+            <button id="joinGameBtn" class="btn secondary">Join Game</button>
+        </div>
+
+        <!-- Active Room Lobby -->
+        <div id="activeLobby" class="hidden glass">
+            <h3>Room: <span id="displayRoomCode"></span></h3>
+            <div class="player-list">
+                <h4>Players Connected (<span id="playerCount">0</span>)</h4>
+                <ul id="connectedPlayers"></ul>
+            </div>
+            <button id="startGameBtn" class="btn primary hidden">Start Game (Host Only)</button>
+        </div>
+    </div>
+
+    <!-- Game View (21 Card Game) -->
+    <div id="game" class="view">
+        <div class="game-header">
+            <span class="room-indicator">Room: <span id="gameRoomCode"></span></span>
+            <button id="leaveGameBtn" class="btn sm danger">Leave</button>
+        </div>
+        
+        <div class="game-area">
+            <!-- Host View -->
+            <div id="hostControls" class="hidden">
+                <div class="host-panel glass">
+                    <h3>Dealer Controls</h3>
+                    <select id="playerSelect">
+                        <option value="">Select a player...</option>
+                    </select>
+                    <div class="action-buttons">
+                        <button id="giveCardBtn" class="btn primary">Give Card</button>
+                        <button id="passBtn" class="btn secondary">Pass</button>
+                    </div>
+                </div>
+                
+                <div id="deathmatchControls" class="hidden host-panel glass danger-border">
+                    <h3>Tie-Breaker: Deathmatch</h3>
+                    <p>Select losing condition:</p>
+                    <div class="action-buttons">
+                        <button class="btn dm-btn" data-cond="highest">Highest</button>
+                        <button class="btn dm-btn" data-cond="middle">Middle</button>
+                        <button class="btn dm-btn" data-cond="lower">Lower</button>
+                    </div>
+                    <button id="revealDeathmatchBtn" class="btn primary full-width mt-10 hidden">Reveal & End</button>
+                </div>
+            </div>
+
+            <!-- Player View -->
+            <div class="player-status glass">
+                <h3 id="myRoleText">Player: <span id="myPlayerName"></span></h3>
+                <div class="status-indicator">
+                    Total: <span id="myTotal">0</span> <span id="safeIndicator" class="hidden"> (SAFE)</span>
+                </div>
+            </div>
+            
+            <div class="cards-container" id="myCards">
+                <!-- Cards injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- About Us Page -->
+    <div id="about" class="view with-nav">
+        <header class="header">
+            <h2>HighTable Org</h2>
+        </header>
+        <div class="about-content glass">
+            <h3>About HighTable</h3>
+            <p>We craft premium gaming experiences for exclusive social circles. Play responsibly.</p>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottomNav" class="bottom-nav hidden">
+        <button class="nav-item active" id="navHome">
+            <span class="icon">🏠</span>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" id="navAbout">
+            <span class="icon">👔</span>
+            <span>HighTable Org</span>
+        </button>
+    </nav>
+
+    <!-- Modals / Alerts -->
+    <div id="customModal" class="modal-overlay hidden">
+        <div class="modal-content glass">
+            <h3 id="modalTitle">Alert</h3>
+            <p id="modalBody">Message goes here</p>
+            <button id="modalClose" class="btn primary">Close</button>
+        </div>
+    </div>
+
+    <div id="massiveAlert" class="massive-alert hidden">
+        <div class="alert-content">
+            <h1 id="massiveAlertText">YOU LOST</h1>
+            <p id="massiveAlertSub">The round is over.</p>
+            <button id="closeMassiveAlertBtn" class="btn primary mt-20">Continue</button>
+        </div>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="game.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
