@@ -620,20 +620,22 @@ select {
 
 .org-list-item {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 8px;
-    text-align: left;
+    text-align: center;
 }
 
 .org-list-item .profile-circle {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     border-width: 1px;
     margin-bottom: 0;
+    flex-shrink: 0;
 }
 .org-list-item .profile-circle svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
 }
 
 .org-list-item .profile-name {
