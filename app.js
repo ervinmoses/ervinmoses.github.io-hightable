@@ -182,8 +182,8 @@ createGameBtn.addEventListener('click', async () => {
 
 joinGameBtn.addEventListener('click', () => {
     const code = roomCodeInput.value.trim();
-    if (code.length !== 6) {
-        showAlert('Invalid Code', 'Please enter a 6-digit room code.');
+    if (code.length !== 4) {
+        showAlert('Invalid Code', 'Please enter a 4-digit room code.');
         return;
     }
     currentPlayer.isHost = false;
