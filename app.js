@@ -190,10 +190,17 @@ onValue(ref(db, 'rooms'), (snapshot) => {
     if (rooms) {
         Object.keys(rooms).forEach(roomCode => {
             const room = rooms[roomCode];
+            const playerCount = room.players ? Object.keys(room.players).length : 0;
+            
+            // Auto-delete empty rooms
+            if (playerCount === 0) {
+                remove(ref(db, `rooms/${roomCode}`));
+                return;
+            }
+
             // Only show rooms in 'waiting' state so players can join
             if (room.status === 'waiting') {
                 hasActiveRooms = true;
-                const playerCount = room.players ? Object.keys(room.players).length : 0;
                 
                 const roomBtn = document.createElement('button');
                 roomBtn.className = 'btn secondary full-width mb-10';
@@ -308,6 +315,12 @@ async function leaveRoom() {
         
         // Remove player from DB
         await remove(ref(db, `rooms/${currentPlayer.roomCode}/players/${currentPlayer.id}`));
+        
+        // Check if room is empty and auto-delete
+        const playersSnapshot = await get(ref(db, `rooms/${currentPlayer.roomCode}/players`));
+        if (!playersSnapshot.exists()) {
+            await remove(ref(db, `rooms/${currentPlayer.roomCode}`));
+        }
         
         // Unsubscribe from room listeners
         if (activeLobbyRef) { activeLobbyRef(); activeLobbyRef = null; }
