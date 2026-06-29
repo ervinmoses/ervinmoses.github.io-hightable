@@ -1,4 +1,4 @@
-import { db } from './firebase-config.js?v=21';
+import { db } from './firebase-config.js?v=22';
 import { ref, set, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 let currentRoom = null;
@@ -44,11 +44,16 @@ export function joinWheelListener(roomCode, playerId, hostStatus) {
         
         wheelPlayerGrid.innerHTML = '';
         Object.keys(players).forEach(id => {
-            const p = players[id];
+            const isHostP = p.isHost;
             const div = document.createElement('div');
-            div.className = 'wheel-player-box glass';
+            div.className = 'table-player-card glass wheel-player-box';
             div.id = `wheel-player-${id}`;
-            div.textContent = p.name;
+            div.innerHTML = `
+                <div class="table-player-header">
+                    <strong>${p.name}</strong>
+                    <span style="color: var(--accent-color);">${isHostP ? 'HOST' : ''}</span>
+                </div>
+            `;
             wheelPlayerGrid.appendChild(div);
         });
     });

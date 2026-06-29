@@ -1,7 +1,7 @@
-import { db } from './firebase-config.js?v=21';
+import { db } from './firebase-config.js?v=22';
 import { ref, set, onValue, push, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-import { initGame, joinGameListener, leaveGame } from './game.js?v=21';
-import { initWheelGame, joinWheelListener, leaveWheelGame } from './wheel.js?v=21';
+import { initGame, joinGameListener, leaveGame } from './game.js?v=22';
+import { initWheelGame, joinWheelListener, leaveWheelGame } from './wheel.js?v=22';
 
 // ---- DOM Elements ----
 const views = document.querySelectorAll('.view');
@@ -274,6 +274,8 @@ async function joinRoom(roomCode) {
     activeLobby.classList.remove('hidden');
     displayRoomCode.textContent = roomCode;
     gameRoomCode.textContent = roomCode;
+    const wheelRoomCode = document.getElementById('wheelRoomCode');
+    if (wheelRoomCode) wheelRoomCode.textContent = roomCode;
     myPlayerName.textContent = currentPlayer.name;
 
     if (currentPlayer.isHost) {

@@ -188,10 +188,12 @@
 
     <!-- Spin The Wheel Game View -->
     <div id="wheelGame" class="view">
-        <header class="header">
-            <button id="leaveWheelBtn" class="btn secondary">Leave Table</button>
-            <h2 id="wheelRoomCode" style="color: var(--accent-color);"></h2>
-        </header>
+        <div class="game-header">
+            <span class="room-indicator">Room: <span id="wheelRoomCode"></span></span>
+            <button id="leaveWheelBtn" class="btn sm danger">Leave</button>
+        </div>
+        
+        <div class="game-area">
         
         <div class="scroll-container">
             <div id="wheelWinnerDisplay" class="hidden text-center mt-20 mb-20" style="padding: 20px; border: 2px solid gold; border-radius: 12px; background: rgba(255,215,0,0.1);">
@@ -210,6 +212,7 @@
                 <button id="spinBtn" class="btn primary full-width" style="font-size: 1.2rem; padding: 15px;">SPIN THE WHEEL!</button>
                 <button id="restartWheelBtn" class="btn secondary full-width mt-10">Restart Game</button>
             </div>
+        </div>
         </div>
     </div>
 
@@ -576,8 +579,8 @@
         </div>
     </div>
 
-    <script type="module" src="firebase-config.js?v=21"></script>
-    <script type="module" src="app.js?v=21"></script>
+    <script type="module" src="firebase-config.js?v=22"></script>
+    <script type="module" src="app.js?v=22"></script>
 </body>
 
 </html>
