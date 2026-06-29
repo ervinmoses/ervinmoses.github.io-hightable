@@ -83,7 +83,7 @@ modalClose.addEventListener('click', () => {
 });
 
 // ---- Initialization & Splash ----
-window.onload = () => {
+document.addEventListener('DOMContentLoaded', () => {
     // Check Telegram WebApp
     const tg = window.Telegram?.WebApp;
     if (tg) {
@@ -98,7 +98,7 @@ window.onload = () => {
             checkRegistration();
         }, 3000); // Show splash 2 for 3s
     }, 2000); // Show splash 1 for 2s
-};
+});
 
 function checkRegistration() {
     // 1. Try local storage
