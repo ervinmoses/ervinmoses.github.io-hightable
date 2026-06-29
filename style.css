@@ -154,12 +154,14 @@ select {
 
 /* Splash Screens */
 .splash {
-    display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
     background-color: var(--bg-color);
+}
+.splash.active {
+    display: flex;
 }
 
 .logo-text {
@@ -185,9 +187,11 @@ select {
 
 /* Auth / Registration */
 #registration {
-    display: flex;
     justify-content: center;
     align-items: center;
+}
+#registration.active {
+    display: flex;
 }
 
 .auth-container {
