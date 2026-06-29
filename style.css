@@ -462,7 +462,7 @@ select {
 .massive-alert {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(255,0,0,0.9);
+    background: rgba(180,0,0,0.9);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -485,9 +485,9 @@ select {
 }
 
 @keyframes flash {
-    0% { background: rgba(0,0,0,1); }
-    50% { background: rgba(255,0,0,1); }
-    100% { background: rgba(255,0,0,0.9); }
+    0% { background: rgba(0,0,0,0.95); }
+    50% { background: rgba(180,0,0,1); }
+    100% { background: rgba(180,0,0,0.9); }
 }
 
 .table-players-container { display: flex; flex-direction: column; gap: 15px; max-height: 400px; overflow-y: auto; }

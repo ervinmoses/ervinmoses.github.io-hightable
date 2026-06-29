@@ -12,6 +12,7 @@ const hostControls = document.getElementById('hostControls');
 const playerSelect = document.getElementById('playerSelect');
 const giveCardBtn = document.getElementById('giveCardBtn');
 const passBtn = document.getElementById('passBtn');
+const restartGameBtn = document.getElementById('restartGameBtn');
 
 // New Table Elements
 const myRoleText = document.getElementById('myRoleText');
@@ -416,6 +417,18 @@ if (giveCardBtn) {
         await update(stateRef, {
             deck: state.deck,
             [`hands/${targetId}`]: state.hands[targetId]
+        });
+    });
+}
+
+if (restartGameBtn) {
+    restartGameBtn.addEventListener('click', async () => {
+        if (!isHost || !currentRoom) return;
+        
+        const roomRef = ref(db, `rooms/${currentRoom}`);
+        await update(roomRef, {
+            status: 'waiting',
+            gameState: null
         });
     });
 }
