@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import { ref, set, onValue, push, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-import { initGame, renderMyCards, joinGameListener, leaveGame } from './game.js';
+import { initGame, joinGameListener, leaveGame } from './game.js';
 
 // ---- DOM Elements ----
 const views = document.querySelectorAll('.view');
@@ -295,8 +295,7 @@ async function leaveRoom() {
         lobbyActions.classList.remove('hidden');
         activeLobby.classList.add('hidden');
         document.getElementById('hostControls').classList.add('hidden');
-        document.getElementById('myCards').innerHTML = '';
-        document.getElementById('myTotal').textContent = '0';
-        document.getElementById('safeIndicator').classList.add('hidden');
+        if (document.getElementById('myTotal')) document.getElementById('myTotal').textContent = '0';
+        if (document.getElementById('safeIndicator')) document.getElementById('safeIndicator').classList.add('hidden');
     }
 }
