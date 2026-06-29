@@ -1,7 +1,7 @@
-import { db } from './firebase-config.js';
+import { db } from './firebase-config.js?v=21';
 import { ref, set, onValue, push, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-import { initGame, joinGameListener, leaveGame } from './game.js';
-import { initWheelGame, joinWheelListener, leaveWheelGame } from './wheel.js';
+import { initGame, joinGameListener, leaveGame } from './game.js?v=21';
+import { initWheelGame, joinWheelListener, leaveWheelGame } from './wheel.js?v=21';
 
 // ---- DOM Elements ----
 const views = document.querySelectorAll('.view');
