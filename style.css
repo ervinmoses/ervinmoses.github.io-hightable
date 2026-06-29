@@ -245,6 +245,7 @@ select {
     position: relative;
     overflow: hidden;
     transition: transform 0.3s, box-shadow 0.3s;
+    text-align: center;
 }
 
 .game-card:active {
@@ -491,7 +492,7 @@ select {
 }
 
 .table-players-container { display: flex; flex-direction: column; gap: 15px; max-height: 400px; overflow-y: auto; }
-.table-player-card { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; }
+.table-player-card { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; text-align: center; }
 .table-player-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
 .text-danger { color: var(--danger-color); }
 
@@ -641,3 +642,26 @@ select {
 .org-list-item .profile-name {
     font-size: 0.75rem;
 }
+
+/* Wheel Game Styles */
+.wheel-player-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+.wheel-player-box {
+    padding: 15px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    transition: all 0.1s ease;
+}
+.wheel-player-box.active-spin {
+    background: rgba(255,215,0,0.3);
+    border-color: gold;
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255,215,0,0.5);
+    color: #fff;
+    font-weight: bold;
+}
+

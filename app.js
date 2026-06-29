@@ -1,6 +1,7 @@
 import { db } from './firebase-config.js';
 import { ref, set, onValue, push, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 import { initGame, joinGameListener, leaveGame } from './game.js';
+import { initWheelGame, joinWheelListener, leaveWheelGame } from './wheel.js';
 
 // ---- DOM Elements ----
 const views = document.querySelectorAll('.view');
@@ -154,9 +155,20 @@ backToHomeBtn.addEventListener('click', () => {
 
 // Coming Soon Alerts
 avalonBtn.addEventListener('click', () => showAlert('Coming Soon', 'Avalon is currently in development!'));
-spinWheelBtn.addEventListener('click', () => showAlert('Coming Soon', 'Spin the Wheel will be available soon!'));
 
-cardGamesBtn.addEventListener('click', () => switchView('lobby'));
+export let currentGameType = '21';
+
+cardGamesBtn.addEventListener('click', () => {
+    currentGameType = '21';
+    document.getElementById('lobbyTitle').textContent = '21 Lobby';
+    switchView('lobby');
+});
+
+spinWheelBtn.addEventListener('click', () => {
+    currentGameType = 'wheel';
+    document.getElementById('lobbyTitle').textContent = 'Spin The Wheel Lobby';
+    switchView('lobby');
+});
 
 // ---- Lobby Logic ----
 function generateRoomCode() {
@@ -164,6 +176,9 @@ function generateRoomCode() {
 }
 
 createGameBtn.addEventListener('click', async () => {
+    createGameBtn.disabled = true;
+    setTimeout(() => createGameBtn.disabled = false, 2000);
+
     const roomCode = generateRoomCode();
     currentPlayer.isHost = true;
     currentPlayer.roomCode = roomCode;
@@ -173,6 +188,7 @@ createGameBtn.addEventListener('click', async () => {
     await set(roomRef, {
         host: currentPlayer.id,
         status: 'waiting',
+        gameType: currentGameType,
         createdAt: Date.now(),
         players: {
             [currentPlayer.id]: {
@@ -205,7 +221,8 @@ onValue(ref(db, 'rooms'), (snapshot) => {
             }
 
             // Only show rooms in 'waiting' state so players can join
-            if (room.status === 'waiting') {
+            const rGameType = room.gameType || '21';
+            if (room.status === 'waiting' && rGameType === currentGameType) {
                 hasActiveRooms = true;
                 
                 const roomBtn = document.createElement('button');
@@ -286,14 +303,23 @@ async function joinRoom(roomCode) {
     activeStatusRef = onValue(ref(db, `rooms/${roomCode}/status`), (snapshot) => {
         const status = snapshot.val();
         if (status === 'playing') {
-            switchView('game');
-            joinGameListener(roomCode, currentPlayer.id, currentPlayer.isHost);
+            if (currentGameType === 'wheel') {
+                switchView('wheelGame');
+                joinWheelListener(roomCode, currentPlayer.id, currentPlayer.isHost);
+            } else {
+                switchView('game');
+                joinGameListener(roomCode, currentPlayer.id, currentPlayer.isHost);
+            }
         } else if (status === 'waiting') {
             // Return to lobby if a game just ended
             if (document.getElementById('game').classList.contains('active')) {
                 leaveGame();
                 switchView('lobby');
                 document.getElementById('massiveAlert').classList.add('hidden');
+            }
+            if (document.getElementById('wheelGame').classList.contains('active')) {
+                leaveWheelGame();
+                switchView('lobby');
             }
         }
     });
@@ -303,7 +329,11 @@ startGameBtn.addEventListener('click', async () => {
     if (!currentPlayer.isHost || !currentPlayer.roomCode) return;
     
     // Initialize game state in Firebase
-    await initGame(currentPlayer.roomCode);
+    if (currentGameType === 'wheel') {
+        await initWheelGame(currentPlayer.roomCode);
+    } else {
+        await initGame(currentPlayer.roomCode);
+    }
     
     // Set status to playing
     await set(ref(db, `rooms/${currentPlayer.roomCode}/status`), 'playing');
@@ -333,6 +363,7 @@ async function leaveRoom() {
         if (activeStatusRef) { activeStatusRef(); activeStatusRef = null; }
         
         leaveGame(); // Clean up game listeners
+        leaveWheelGame(); // Clean up wheel listeners
         
         currentPlayer.roomCode = null;
         currentPlayer.isHost = false;
