@@ -1,5 +1,5 @@
 import { db } from './firebase-config.js';
-import { ref, set, onValue, push, update, remove, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { ref, set, onValue, push, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 import { initGame, renderMyCards, joinGameListener, leaveGame } from './game.js';
 
 // ---- DOM Elements ----
@@ -48,6 +48,7 @@ export let currentPlayer = {
 };
 
 export let activeLobbyRef = null;
+export let activeStatusRef = null;
 
 // ---- View Routing ----
 function switchView(viewId) {
@@ -207,6 +208,9 @@ async function joinRoom(roomCode) {
         name: currentPlayer.name,
         isHost: currentPlayer.isHost
     });
+    
+    // Automatically remove player if they disconnect
+    onDisconnect(playersRef).remove();
 
     // UI Updates
     lobbyActions.classList.add('hidden');
@@ -222,6 +226,7 @@ async function joinRoom(roomCode) {
     }
 
     // Listen for player changes
+    if (activeLobbyRef) activeLobbyRef(); // Unsub existing if any
     activeLobbyRef = onValue(ref(db, `rooms/${roomCode}/players`), (snapshot) => {
         const players = snapshot.val();
         connectedPlayersList.innerHTML = '';
@@ -238,11 +243,20 @@ async function joinRoom(roomCode) {
         playerCount.textContent = count;
     });
 
-    // Listen for game start
-    onValue(ref(db, `rooms/${roomCode}/status`), (snapshot) => {
-        if (snapshot.val() === 'playing') {
+    // Listen for game status changes
+    if (activeStatusRef) activeStatusRef(); // Unsub existing if any
+    activeStatusRef = onValue(ref(db, `rooms/${roomCode}/status`), (snapshot) => {
+        const status = snapshot.val();
+        if (status === 'playing') {
             switchView('game');
             joinGameListener(roomCode, currentPlayer.id, currentPlayer.isHost);
+        } else if (status === 'waiting') {
+            // Return to lobby if a game just ended
+            if (document.getElementById('game').classList.contains('active')) {
+                leaveGame();
+                switchView('lobby');
+                document.getElementById('massiveAlert').classList.add('hidden');
+            }
         }
     });
 }
@@ -264,8 +278,16 @@ leaveGameBtn.addEventListener('click', () => {
 
 async function leaveRoom() {
     if (currentPlayer.roomCode) {
+        // Cancel disconnect listener so it doesn't trigger unexpectedly
+        onDisconnect(ref(db, `rooms/${currentPlayer.roomCode}/players/${currentPlayer.id}`)).cancel();
+        
         // Remove player from DB
         await remove(ref(db, `rooms/${currentPlayer.roomCode}/players/${currentPlayer.id}`));
+        
+        // Unsubscribe from room listeners
+        if (activeLobbyRef) { activeLobbyRef(); activeLobbyRef = null; }
+        if (activeStatusRef) { activeStatusRef(); activeStatusRef = null; }
+        
         leaveGame(); // Clean up game listeners
         
         currentPlayer.roomCode = null;

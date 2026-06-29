@@ -115,9 +115,11 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
 }
 
 export function leaveGame() {
-    // Unsubscribe from Firebase listeners
+    // Unsubscribe from Firebase listeners using the returned functions
     gameListeners.forEach(l => {
-        // Just empty for now, ideally `off(l.ref, l.listener)` but we need to import `off` or use returned unsubscribe from modular SDK
+        if (typeof l.listener === 'function') {
+            l.listener();
+        }
     });
     gameListeners = [];
     currentRoom = null;
@@ -125,6 +127,10 @@ export function leaveGame() {
     hostControls.classList.add('hidden');
     deathmatchControls.classList.add('hidden');
     massiveAlert.classList.add('hidden');
+    
+    // Clean up dynamic host buttons
+    const endBtn = document.getElementById('endRoundBtn');
+    if (endBtn) endBtn.remove();
 }
 
 function calculateTotal(hand) {
@@ -369,7 +375,7 @@ async function handleDeathmatchReveal(state) {
     }
 
     setTimeout(() => {
-        if (isHost) {
+        if (isHost && currentRoom) {
             update(ref(db, `rooms/${currentRoom}/gameState`), {
                 status: 'game_over',
                 loserName: loser.name,
@@ -385,7 +391,13 @@ function showLoser(name, reason) {
     massiveAlert.classList.remove('hidden');
 }
 
-closeMassiveAlertBtn.onclick = () => {
+closeMassiveAlertBtn.onclick = async () => {
     massiveAlert.classList.add('hidden');
-    // If host, maybe reset game state or go back to lobby
+    if (isHost && currentRoom) {
+        // Reset room status to waiting so everyone returns to lobby
+        await update(ref(db, `rooms/${currentRoom}`), {
+            status: 'waiting',
+            gameState: null // Clear old game state
+        });
+    }
 };
