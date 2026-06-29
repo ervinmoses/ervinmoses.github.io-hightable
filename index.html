@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -9,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
     <!-- Splash Screen 1 -->
@@ -89,10 +91,64 @@
             <span class="room-indicator">Room: <span id="gameRoomCode"></span></span>
             <button id="leaveGameBtn" class="btn sm danger">Leave</button>
         </div>
-        
+
         <div class="game-area">
-            <!-- Host View -->
-            <div id="hostControls" class="hidden">
+
+            <!-- 1. Shared/Private Cards Area -->
+            <div id="myTableArea">
+                <div class="glass text-center">
+                    <h4>My Cards</h4>
+                    <div id="myCardsArea" class="cards-container mt-10" style="justify-content: center;">
+                        <!-- My Cards rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spy Viewing Area -->
+            <div id="spyViewingArea" class="glass mt-10 hidden text-center">
+                <h4 id="spyPlayerNameTitle">Spying...</h4>
+                <div id="spyCardsArea" class="cards-container mt-10" style="justify-content: center;">
+                    <!-- Spied Cards rendered here -->
+                </div>
+            </div>
+
+            <!-- Deathmatch Table Area -->
+            <div id="deathmatchTableArea" class="glass mt-20 hidden text-center danger-border">
+                <h3 class="text-danger">TIE BREAKER TABLE</h3>
+                <div id="deathmatchTablePlayers" class="table-players-container mt-10">
+                    <!-- Deathmatch Cards rendered here -->
+                </div>
+            </div>
+
+            <!-- Deathmatch Reveal Area (For tied players only) -->
+            <div id="deathmatchRevealArea" class="hidden glass mt-20 text-center danger-border">
+                <h3 id="dmOpponentsText" class="text-danger">Deathmatch Tie-Breaker</h3>
+                <p>You have received 1 hidden card. Reveal it when ready.</p>
+                <button id="myRevealBtn" class="btn primary mt-10">Reveal My Card</button>
+            </div>
+
+            <!-- 2. Spy / Viewing Controls -->
+            <div id="viewingControls" class="glass mt-20 text-center">
+                <h3>View Table</h3>
+                <select id="viewPlayerSelect" class="full-width mb-10">
+                    <option value="">Select a player to view...</option>
+                </select>
+                <button id="backToMyTableBtn" class="btn secondary full-width hidden">Back to My Table</button>
+            </div>
+
+            <!-- 3. Player Status & Action -->
+            <div id="myStatusArea" class="player-status glass mb-10 mt-20"
+                style="flex-direction: column; align-items: stretch; text-align: center;">
+                <h3 id="myRoleText">Player: <span id="myPlayerName"></span></h3>
+                <div class="status-indicator mt-10 mb-10">
+                    My Total: <span id="myTotal">0</span> <span id="safeIndicator" class="hidden text-danger">
+                        (SAFE)</span>
+                </div>
+                <button id="lockSafeBtn" class="btn primary full-width mt-10">Lock In (SAFE)</button>
+            </div>
+
+            <!-- 4. Host View (Moved to bottom) -->
+            <div id="hostControls" class="hidden mt-20">
                 <div class="host-panel glass">
                     <h3>Dealer Controls</h3>
                     <select id="playerSelect">
@@ -103,7 +159,7 @@
                         <button id="passBtn" class="btn secondary">Pass</button>
                     </div>
                 </div>
-                
+
                 <div id="deathmatchControls" class="hidden host-panel glass danger-border">
                     <h3>Tie-Breaker: Deathmatch</h3>
                     <p>Select losing condition:</p>
@@ -112,44 +168,332 @@
                         <button class="btn dm-btn" data-cond="middle">Middle</button>
                         <button class="btn dm-btn" data-cond="lower">Lower</button>
                     </div>
-                    <button id="revealDeathmatchBtn" class="btn primary full-width mt-10 hidden">Start Deathmatch & Deal</button>
+                    <button id="revealDeathmatchBtn" class="btn primary full-width mt-10 hidden">Start Deathmatch &
+                        Deal</button>
                 </div>
             </div>
 
-            <!-- Player View & Action -->
-            <div class="player-status glass">
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <h3 id="myRoleText">Player: <span id="myPlayerName"></span></h3>
-                    <button id="lockSafeBtn" class="btn primary">Lock In (SAFE)</button>
-                </div>
-                <div class="status-indicator mt-10">
-                    My Total: <span id="myTotal">0</span> <span id="safeIndicator" class="hidden"> (SAFE)</span>
-                </div>
-            </div>
-            
-            <!-- Deathmatch Reveal Area (For tied players only) -->
-            <div id="deathmatchRevealArea" class="hidden glass mt-20 text-center danger-border">
-                <h3 id="dmOpponentsText" class="text-danger">Deathmatch Tie-Breaker</h3>
-                <p>You have received 1 hidden card. Reveal it when ready.</p>
-                <button id="myRevealBtn" class="btn primary mt-10">Reveal My Card</button>
-            </div>
-
-            <!-- Shared Table View -->
-            <h3 class="mt-20">The Table:</h3>
-            <div id="tablePlayers" class="table-players-container">
-                <!-- Other players' hands injected via JS -->
-            </div>
         </div>
     </div>
 
-    <!-- About Us Page -->
+    <!-- About Us Page (Org Chart) -->
     <div id="about" class="view with-nav">
         <header class="header">
             <h2>HighTable Org</h2>
         </header>
-        <div class="about-content glass">
-            <h3>About HighTable</h3>
-            <p>We craft premium gaming experiences for exclusive social circles. Play responsibly.</p>
+
+        <div class="org-container">
+            <!-- Organization Tree (Row 1 & 2) -->
+            <div class="org-tree">
+                <!-- Row 1: Founders & Alumni -->
+                <div class="org-row">
+                    <div class="profile-node">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-role">Founder Left</div>
+                        <div class="profile-name">Ambron Recildo De Zevar Sebin</div>
+                        <div class="org-drop-line"></div>
+                    </div>
+
+                    <div class="profile-node" style="opacity: 0.7;">
+                        <div class="profile-circle" style="border-color: #888; color: #888;"><svg viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-role" style="color: #888;">Alumni</div>
+                        <div class="profile-name">Andreas Aoudrey James</div>
+                    </div>
+
+                    <div class="profile-node">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-role">Founder Right</div>
+                        <div class="profile-name">Arlonso Nazarius</div>
+                        <div class="org-drop-line"></div>
+                    </div>
+                </div>
+
+                <!-- Connector to Row 2 -->
+                <div class="org-connector"></div>
+
+                <!-- Row 2: OG -->
+                <div class="org-row">
+                    <div class="profile-node">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-role">OG</div>
+                        <div class="profile-name">Cristopher Fenner L.Bansing</div>
+                    </div>
+                    <div class="profile-node">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-role">OG</div>
+                        <div class="profile-name">Bradley Balan Anak Jackson</div>
+                    </div>
+                    <div class="profile-node">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-role">OG</div>
+                        <div class="profile-name">Eltonjohn Anthony</div>
+                    </div>
+                    <div class="profile-node">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-role">OG</div>
+                        <div class="profile-name">Ervin Moses Spencer</div>
+                    </div>
+                    <div class="profile-node">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-role">OG</div>
+                        <div class="profile-name">Hildiey Bin Galabok @ Henry</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Active Members -->
+            <div class="org-list-section">
+                <h3>Active Members</h3>
+                <div class="org-list">
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Alven</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Bryann Kent Linus</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Christwell</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Dominic Russel Anak Bujan</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Endrick Ryan Meyrick</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Ezra</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Hamilton</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Jordan</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Jovenero Kousi</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Malcolm Steward Anak Jinbai</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Nelson</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Paydrol Anak Apeng</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Philip Jonathan</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Randall Vince Ronney</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Stevclyarren Paulus</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 4: Sometime available -->
+            <div class="org-list-section">
+                <h3>Sometime Available</h3>
+                <div class="org-list">
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Fabian</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Hillary</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Ken</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Schazzler Sergus</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 5: Missing -->
+            <div class="org-list-section" style="opacity: 0.6;">
+                <h3>Missing</h3>
+                <div class="org-list">
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Aylvin</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Dellian Mesanis</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Dominic Matheus Jimi</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Effel Vin Desent Lausin</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">Hessel Gisang</div>
+                    </div>
+                    <div class="org-list-item">
+                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg></div>
+                        <div class="profile-name">William Lulin</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -157,13 +501,23 @@
     <nav id="bottomNav" class="bottom-nav hidden">
         <button class="nav-item active" id="navHome">
             <span class="icon">
-                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
             </span>
             <span>Home</span>
         </button>
         <button class="nav-item" id="navAbout">
             <span class="icon">
-                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
             </span>
             <span>Org</span>
         </button>
@@ -186,8 +540,9 @@
         </div>
     </div>
 
-    <script type="module" src="firebase-config.js?v=7"></script>
-    <script type="module" src="game.js?v=7"></script>
-    <script type="module" src="app.js?v=7"></script>
+    <script type="module" src="firebase-config.js?v=9"></script>
+    <script type="module" src="game.js?v=9"></script>
+    <script type="module" src="app.js?v=9"></script>
 </body>
+
 </html>

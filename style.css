@@ -489,3 +489,150 @@ select {
     50% { background: rgba(255,0,0,1); }
     100% { background: rgba(255,0,0,0.9); }
 }
+
+.table-players-container { display: flex; flex-direction: column; gap: 15px; max-height: 400px; overflow-y: auto; }
+.table-player-card { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; }
+.table-player-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.text-danger { color: var(--danger-color); }
+
+.sm-card { font-size: 1rem !important; padding: 5px !important; min-width: 40px !important; min-height: 60px !important; }
+.dm-card { border: 2px solid var(--danger-color); }
+.dm-card.back { background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 10px, #000 10px, #000 20px); color: transparent; text-shadow: none; }
+
+/* --- Org Chart Styles --- */
+.org-container {
+    width: 100%;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.org-tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.org-row {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+}
+
+.org-drop-line {
+    width: 2px;
+    height: 15px;
+    background-color: var(--accent-color);
+    margin: 5px auto 0 auto;
+}
+
+.org-connector {
+    width: 210px; /* 100px node + 10px gap + 100px node + 10px gap + center */
+    height: 20px;
+    border-top: 2px solid var(--accent-color);
+    position: relative;
+    margin: 0 auto;
+    z-index: 1;
+}
+
+.org-connector::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 20px;
+    background-color: var(--accent-color);
+    transform: translateX(-50%);
+}
+
+.profile-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100px;
+    text-align: center;
+}
+
+.profile-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    border: 2px solid var(--accent-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+    color: var(--accent-color);
+}
+
+.profile-circle svg {
+    width: 24px;
+    height: 24px;
+}
+
+.profile-role {
+    font-size: 0.7rem;
+    color: var(--accent-color);
+    font-weight: 600;
+    margin-bottom: 2px;
+    line-height: 1.1;
+}
+
+.profile-name {
+    font-size: 0.65rem;
+    color: var(--text-color);
+    line-height: 1.2;
+}
+
+/* List Style for Rows 3,4,5 */
+.org-list-section {
+    margin-bottom: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.org-list-section h3 {
+    color: var(--accent-color);
+    font-size: 1rem;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    text-align: left;
+}
+
+.org-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+}
+
+.org-list-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+}
+
+.org-list-item .profile-circle {
+    width: 32px;
+    height: 32px;
+    border-width: 1px;
+    margin-bottom: 0;
+}
+.org-list-item .profile-circle svg {
+    width: 16px;
+    height: 16px;
+}
+
+.org-list-item .profile-name {
+    font-size: 0.75rem;
+}

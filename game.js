@@ -19,7 +19,51 @@ const myPlayerName = document.getElementById('myPlayerName');
 const myTotalSpan = document.getElementById('myTotal');
 const safeIndicator = document.getElementById('safeIndicator');
 const lockSafeBtn = document.getElementById('lockSafeBtn');
-const tablePlayers = document.getElementById('tablePlayers');
+const myTableArea = document.getElementById('myTableArea');
+const myCardsArea = document.getElementById('myCardsArea');
+
+// Spy Elements
+const viewingControls = document.getElementById('viewingControls');
+const viewPlayerSelect = document.getElementById('viewPlayerSelect');
+const spyViewingArea = document.getElementById('spyViewingArea');
+const spyPlayerNameTitle = document.getElementById('spyPlayerNameTitle');
+const spyCardsArea = document.getElementById('spyCardsArea');
+const backToMyTableBtn = document.getElementById('backToMyTableBtn');
+
+// Deathmatch Table Elements
+const deathmatchTableArea = document.getElementById('deathmatchTableArea');
+const deathmatchTablePlayers = document.getElementById('deathmatchTablePlayers');
+
+let lastKnownState = null;
+let lastKnownPlayers = null;
+let viewingPlayerId = null;
+
+if (viewPlayerSelect) {
+    viewPlayerSelect.addEventListener('change', () => {
+        viewingPlayerId = viewPlayerSelect.value;
+        if (viewingPlayerId) {
+            myTableArea.classList.add('hidden');
+            spyViewingArea.classList.remove('hidden');
+            backToMyTableBtn.classList.remove('hidden');
+        } else {
+            myTableArea.classList.remove('hidden');
+            spyViewingArea.classList.add('hidden');
+            backToMyTableBtn.classList.add('hidden');
+        }
+        if (lastKnownState && lastKnownPlayers) renderCards(lastKnownState, lastKnownPlayers);
+    });
+}
+
+if (backToMyTableBtn) {
+    backToMyTableBtn.addEventListener('click', () => {
+        viewPlayerSelect.value = '';
+        viewingPlayerId = null;
+        myTableArea.classList.remove('hidden');
+        spyViewingArea.classList.add('hidden');
+        backToMyTableBtn.classList.add('hidden');
+        if (lastKnownState && lastKnownPlayers) renderCards(lastKnownState, lastKnownPlayers);
+    });
+}
 
 // Deathmatch Elements
 const deathmatchControls = document.getElementById('deathmatchControls');
@@ -98,7 +142,9 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
         const playersSnapshot = await get(ref(db, `rooms/${currentRoom}/players`));
         const players = playersSnapshot.val() || {};
 
-        renderTablePlayers(state, players);
+        lastKnownState = state;
+        lastKnownPlayers = players;
+        renderCards(state, players);
         
         if (isHost) {
             updateHostControls(state, players);
@@ -107,6 +153,12 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
 
         // Handle deathmatch
         if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_reveal') {
+            myTableArea.classList.add('hidden');
+            if (document.getElementById('myStatusArea')) document.getElementById('myStatusArea').classList.add('hidden');
+            viewingControls.classList.add('hidden');
+            spyViewingArea.classList.add('hidden');
+            deathmatchTableArea.classList.remove('hidden');
+            
             handleDeathmatch(state, players);
             
             // Auto-finalize if everyone has revealed
@@ -118,6 +170,17 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
             }
         } else {
             deathmatchRevealArea.classList.add('hidden');
+            deathmatchTableArea.classList.add('hidden');
+            viewingControls.classList.remove('hidden');
+            if (document.getElementById('myStatusArea')) document.getElementById('myStatusArea').classList.remove('hidden');
+            
+            if (viewingPlayerId) {
+                myTableArea.classList.add('hidden');
+                spyViewingArea.classList.remove('hidden');
+            } else {
+                myTableArea.classList.remove('hidden');
+                spyViewingArea.classList.add('hidden');
+            }
         }
         
         // Handle Game Over
@@ -136,10 +199,13 @@ export function leaveGame() {
     gameListeners = [];
     currentRoom = null;
     isHost = false;
+    viewingPlayerId = null;
+    if(viewPlayerSelect) viewPlayerSelect.value = '';
     hostControls.classList.add('hidden');
     deathmatchControls.classList.add('hidden');
     massiveAlert.classList.add('hidden');
     if(deathmatchRevealArea) deathmatchRevealArea.classList.add('hidden');
+    if(deathmatchTableArea) deathmatchTableArea.classList.add('hidden');
     
     const endBtn = document.getElementById('endRoundBtn');
     if (endBtn) endBtn.remove();
@@ -164,11 +230,10 @@ function calculateTotal(hand) {
     return total;
 }
 
-function renderTablePlayers(state, players) {
-    if(!tablePlayers) return;
-    tablePlayers.innerHTML = '';
+function renderCards(state, players) {
+    if(!myCardsArea) return;
     
-    // Setup My Status
+    // 1. My Table
     const myHand = state.hands[myId] || [];
     const myTotal = calculateTotal(myHand);
     if(myTotalSpan) myTotalSpan.textContent = myTotal;
@@ -187,23 +252,37 @@ function renderTablePlayers(state, players) {
         }
     }
 
-    // Render everyone's cards
+    myCardsArea.innerHTML = '';
+    myHand.forEach(card => {
+        let suitSymbol = '';
+        switch(card.suit) {
+            case 'hearts': suitSymbol = '♥'; break;
+            case 'diamonds': suitSymbol = '♦'; break;
+            case 'clubs': suitSymbol = '♣'; break;
+            case 'spades': suitSymbol = '♠'; break;
+        }
+        const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
+        myCardsArea.innerHTML += `<div class="playing-card ${redClass}">${card.value}<br/>${suitSymbol}</div>`;
+    });
+
+    // 2. Update Spy Dropdown options
+    const currentVal = viewPlayerSelect.value;
+    viewPlayerSelect.innerHTML = '<option value="">Select a player to view...</option>';
     Object.keys(players).forEach(id => {
-        const hand = state.hands[id] || [];
-        const isPlayerSafe = state.safePlayers && state.safePlayers[id] !== undefined;
-        
-        const cardContainer = document.createElement('div');
-        cardContainer.className = 'table-player-card';
-        
-        let header = `
-            <div class="table-player-header">
-                <strong>${players[id].name} ${id === myId ? '(You)' : ''}</strong>
-                <span>${isPlayerSafe ? '<strong class="text-danger">SAFE</strong>' : `Cards: ${hand.length}/5`}</span>
-            </div>
-        `;
-        
-        let cardsHtml = '<div class="cards-container">';
-        hand.forEach(card => {
+        if (id === myId) return;
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = players[id].name;
+        viewPlayerSelect.appendChild(option);
+    });
+    if (currentVal) viewPlayerSelect.value = currentVal;
+    
+    // 3. Render Spy Cards
+    if (viewingPlayerId && players[viewingPlayerId]) {
+        spyPlayerNameTitle.textContent = `Spying on: ${players[viewingPlayerId].name}`;
+        spyCardsArea.innerHTML = '';
+        const spyHand = state.hands[viewingPlayerId] || [];
+        spyHand.forEach(card => {
             let suitSymbol = '';
             switch(card.suit) {
                 case 'hearts': suitSymbol = '♥'; break;
@@ -212,25 +291,39 @@ function renderTablePlayers(state, players) {
                 case 'spades': suitSymbol = '♠'; break;
             }
             const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
-            cardsHtml += `<div class="playing-card sm-card ${redClass}">${card.value}<br/>${suitSymbol}</div>`;
+            spyCardsArea.innerHTML += `<div class="playing-card ${redClass}">${card.value}<br/>${suitSymbol}</div>`;
         });
-        
-        // If Deathmatch, show dmCard if it exists
-        if (state.dmHands && state.dmHands[id]) {
-            if (state.dmRevealed && state.dmRevealed[id]) {
-                const c = state.dmHands[id];
-                const redClass = ['hearts', 'diamonds'].includes(c.suit) ? 'red' : '';
-                let sym = c.suit === 'hearts' ? '♥' : (c.suit === 'diamonds' ? '♦' : (c.suit === 'clubs' ? '♣' : '♠'));
-                cardsHtml += `<div class="playing-card sm-card dm-card ${redClass}">${c.value}<br/>${sym}</div>`;
+    }
+
+    // 4. Render Deathmatch Cards
+    if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_reveal') {
+        if (!deathmatchTablePlayers) return;
+        deathmatchTablePlayers.innerHTML = '';
+        state.tiedPlayers.forEach(id => {
+            if (!players[id]) return;
+            const cardContainer = document.createElement('div');
+            cardContainer.className = 'table-player-card';
+            let header = `<div class="table-player-header"><strong>${players[id].name} ${id === myId ? '(You)' : ''}</strong></div>`;
+            let cardsHtml = '<div class="cards-container">';
+            
+            if (state.dmHands && state.dmHands[id]) {
+                if (state.dmRevealed && state.dmRevealed[id]) {
+                    const c = state.dmHands[id];
+                    const redClass = ['hearts', 'diamonds'].includes(c.suit) ? 'red' : '';
+                    let sym = c.suit === 'hearts' ? '♥' : (c.suit === 'diamonds' ? '♦' : (c.suit === 'clubs' ? '♣' : '♠'));
+                    cardsHtml += `<div class="playing-card sm-card dm-card ${redClass}">${c.value}<br/>${sym}</div>`;
+                } else {
+                    cardsHtml += `<div class="playing-card sm-card dm-card back">?</div>`;
+                }
             } else {
-                cardsHtml += `<div class="playing-card sm-card dm-card back">?</div>`;
+                cardsHtml += `<span class="mt-10 mb-10 text-muted">Waiting for deal...</span>`;
             }
-        }
-        
-        cardsHtml += '</div>';
-        cardContainer.innerHTML = header + cardsHtml;
-        tablePlayers.appendChild(cardContainer);
-    });
+            
+            cardsHtml += '</div>';
+            cardContainer.innerHTML = header + cardsHtml;
+            deathmatchTablePlayers.appendChild(cardContainer);
+        });
+    }
 }
 
 // SAFE Button Click

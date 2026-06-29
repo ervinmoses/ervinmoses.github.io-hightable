@@ -297,5 +297,11 @@ async function leaveRoom() {
         document.getElementById('hostControls').classList.add('hidden');
         if (document.getElementById('myTotal')) document.getElementById('myTotal').textContent = '0';
         if (document.getElementById('safeIndicator')) document.getElementById('safeIndicator').classList.add('hidden');
+        if (document.getElementById('myTableArea')) document.getElementById('myTableArea').classList.remove('hidden');
+        if (document.getElementById('myStatusArea')) document.getElementById('myStatusArea').classList.remove('hidden');
+        if (document.getElementById('spyViewingArea')) document.getElementById('spyViewingArea').classList.add('hidden');
+        if (document.getElementById('deathmatchTableArea')) document.getElementById('deathmatchTableArea').classList.add('hidden');
+        if (document.getElementById('viewPlayerSelect')) document.getElementById('viewPlayerSelect').value = '';
+        if (document.getElementById('backToMyTableBtn')) document.getElementById('backToMyTableBtn').classList.add('hidden');
     }
 }
