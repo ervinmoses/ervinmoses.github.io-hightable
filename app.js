@@ -256,6 +256,8 @@ async function joinRoom(roomCode) {
         showAlert('Error', 'Room not found.');
         return;
     }
+    
+    currentGameType = snapshot.val().gameType || '21';
 
     // Add player to room
     const playersRef = ref(db, `rooms/${roomCode}/players/${currentPlayer.id}`);
@@ -343,6 +345,14 @@ leaveGameBtn.addEventListener('click', () => {
     leaveRoom();
     switchView('lobby');
 });
+
+const leaveWheelBtn = document.getElementById('leaveWheelBtn');
+if (leaveWheelBtn) {
+    leaveWheelBtn.addEventListener('click', () => {
+        leaveRoom();
+        switchView('lobby');
+    });
+}
 
 async function leaveRoom() {
     if (currentPlayer.roomCode) {
