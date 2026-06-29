@@ -173,7 +173,13 @@ createGameBtn.addEventListener('click', async () => {
     await set(roomRef, {
         host: currentPlayer.id,
         status: 'waiting',
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        players: {
+            [currentPlayer.id]: {
+                name: currentPlayer.name,
+                isHost: true
+            }
+        }
     });
 
     joinRoom(roomCode);
