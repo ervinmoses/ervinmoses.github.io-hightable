@@ -69,9 +69,10 @@
         </header>
         <div class="lobby-actions">
             <button id="createGameBtn" class="btn primary">Create Host Game</button>
-            <div class="divider"><span>OR</span></div>
-            <input type="text" id="roomCodeInput" placeholder="Enter Room Code" maxlength="6">
-            <button id="joinGameBtn" class="btn secondary">Join Game</button>
+            <div class="divider mt-10 mb-10"><span>OR JOIN A TABLE</span></div>
+            <div id="publicRoomsList" class="game-list" style="max-height: 300px; overflow-y: auto;">
+                <p class="text-center mt-10" style="color: #666;">Searching for active tables...</p>
+            </div>
         </div>
 
         <!-- Active Room Lobby -->
@@ -540,9 +541,9 @@
         </div>
     </div>
 
-    <script type="module" src="firebase-config.js?v=9"></script>
-    <script type="module" src="game.js?v=9"></script>
-    <script type="module" src="app.js?v=9"></script>
+    <script type="module" src="firebase-config.js?v=10"></script>
+    <script type="module" src="game.js?v=10"></script>
+    <script type="module" src="app.js?v=10"></script>
 </body>
 
 </html>

@@ -21,8 +21,7 @@ const cardGamesBtn = document.getElementById('cardGamesBtn');
 const avalonBtn = document.getElementById('avalonBtn');
 const spinWheelBtn = document.getElementById('spinWheelBtn');
 const createGameBtn = document.getElementById('createGameBtn');
-const joinGameBtn = document.getElementById('joinGameBtn');
-const roomCodeInput = document.getElementById('roomCodeInput');
+const publicRoomsList = document.getElementById('publicRoomsList');
 const backToHomeBtn = document.getElementById('backToHomeBtn');
 
 // Active Lobby
@@ -180,15 +179,43 @@ createGameBtn.addEventListener('click', async () => {
     joinRoom(roomCode);
 });
 
-joinGameBtn.addEventListener('click', () => {
-    const code = roomCodeInput.value.trim();
-    if (code.length !== 4) {
-        showAlert('Invalid Code', 'Please enter a 4-digit room code.');
-        return;
+// Listen for active rooms globally
+onValue(ref(db, 'rooms'), (snapshot) => {
+    if (!publicRoomsList) return;
+    
+    publicRoomsList.innerHTML = '';
+    const rooms = snapshot.val();
+    let hasActiveRooms = false;
+
+    if (rooms) {
+        Object.keys(rooms).forEach(roomCode => {
+            const room = rooms[roomCode];
+            // Only show rooms in 'waiting' state so players can join
+            if (room.status === 'waiting') {
+                hasActiveRooms = true;
+                const playerCount = room.players ? Object.keys(room.players).length : 0;
+                
+                const roomBtn = document.createElement('button');
+                roomBtn.className = 'btn secondary full-width mb-10';
+                roomBtn.style.textAlign = 'left';
+                roomBtn.style.display = 'flex';
+                roomBtn.style.justifyContent = 'space-between';
+                roomBtn.innerHTML = `<span>Table: <strong>${roomCode}</strong></span> <span>👥 ${playerCount}</span>`;
+                
+                roomBtn.addEventListener('click', () => {
+                    currentPlayer.isHost = false;
+                    currentPlayer.roomCode = roomCode;
+                    joinRoom(roomCode);
+                });
+                
+                publicRoomsList.appendChild(roomBtn);
+            }
+        });
     }
-    currentPlayer.isHost = false;
-    currentPlayer.roomCode = code;
-    joinRoom(code);
+
+    if (!hasActiveRooms) {
+        publicRoomsList.innerHTML = '<p class="text-center mt-10" style="color: #666;">No active tables found.</p>';
+    }
 });
 
 async function joinRoom(roomCode) {
