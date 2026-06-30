@@ -21,7 +21,7 @@
     <!-- Splash Screen 2 -->
     <div id="splash-2" class="view splash">
         <div class="overlay"></div>
-        <p class="warning-text">⚠️ WARNING: 21+ only. Play responsibly.</p>
+        <p class="warning-text">⚠️ Amaran: Meminum Arak dibawah 21 tahun adalah dibenarkan.</p>
     </div>
 
     <!-- Player Registration -->
@@ -43,7 +43,13 @@
             <div class="game-card" id="cardGamesBtn">
                 <div class="card-content">
                     <h3 style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M8 6h.01"></path><path d="M16 18h.01"></path></svg>
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <path d="M8 6h.01"></path>
+                            <path d="M16 18h.01"></path>
+                        </svg>
                         21 Card Game
                     </h3>
                     <p>The classic game of survival.</p>
@@ -52,7 +58,10 @@
             <div class="game-card locked" id="avalonBtn">
                 <div class="card-content">
                     <h3 style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
                         Avalon
                     </h3>
                     <p>Coming Soon</p>
@@ -61,7 +70,13 @@
             <div class="game-card" id="spinWheelBtn">
                 <div class="card-content">
                     <h3 style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="12"></line><line x1="12" y1="12" x2="20.66" y2="17"></line><line x1="12" y1="12" x2="3.34" y2="17"></line></svg>
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="2" x2="12" y2="12"></line>
+                            <line x1="12" y1="12" x2="20.66" y2="17"></line>
+                            <line x1="12" y1="12" x2="3.34" y2="17"></line>
+                        </svg>
                         Spin The Wheel
                     </h3>
                     <p>The ultimate roulette.</p>
@@ -151,7 +166,8 @@
                 style="flex-direction: column; align-items: stretch; text-align: center;">
                 <h3 id="myRoleText">Player: <span id="myPlayerName"></span></h3>
                 <div class="status-indicator mt-10 mb-10">
-                    My Total: <span id="myTotal">0</span> <span id="safeIndicator" class="hidden text-danger"> (LOCK)</span>
+                    My Total: <span id="myTotal">0</span> <span id="safeIndicator" class="hidden text-danger">
+                        (LOCK)</span>
                 </div>
                 <button id="lockSafeBtn" class="btn primary full-width mt-10">LOCK</button>
             </div>
@@ -177,9 +193,10 @@
                         <button class="btn dm-btn" data-cond="middle">Middle</button>
                         <button class="btn dm-btn" data-cond="lower">Lower</button>
                     </div>
-                    <button id="revealDeathmatchBtn" class="btn primary full-width mt-10 hidden">Start Deathmatch & Deal</button>
+                    <button id="revealDeathmatchBtn" class="btn primary full-width mt-10 hidden">Start Deathmatch &
+                        Deal</button>
                 </div>
-                
+
                 <button id="restartGameBtn" class="btn secondary full-width mt-20">Restart Game</button>
             </div>
 
@@ -192,27 +209,29 @@
             <span class="room-indicator">Room: <span id="wheelRoomCode"></span></span>
             <button id="leaveWheelBtn" class="btn sm danger">Leave</button>
         </div>
-        
-        <div class="game-area">
-        
-        <div class="scroll-container">
-            <div id="wheelWinnerDisplay" class="hidden text-center mt-20 mb-20" style="padding: 20px; border: 2px solid gold; border-radius: 12px; background: rgba(255,215,0,0.1);">
-                <h2 style="color: gold; margin-bottom: 5px;">WINNER!</h2>
-                <h1 id="wheelWinnerText" style="color: #fff;"></h1>
-            </div>
 
-            <div class="glass text-center">
-                <h3>Players</h3>
-                <div id="wheelPlayerGrid" class="wheel-player-grid mt-10">
-                    <!-- Players rendered here -->
+        <div class="game-area">
+
+            <div class="scroll-container">
+                <div id="wheelWinnerDisplay" class="hidden text-center mt-20 mb-20"
+                    style="padding: 20px; border: 2px solid gold; border-radius: 12px; background: rgba(255,215,0,0.1);">
+                    <h2 style="color: gold; margin-bottom: 5px;">WINNER!</h2>
+                    <h1 id="wheelWinnerText" style="color: #fff;"></h1>
+                </div>
+
+                <div class="glass text-center">
+                    <h3>Players</h3>
+                    <div id="wheelPlayerGrid" class="wheel-player-grid mt-10">
+                        <!-- Players rendered here -->
+                    </div>
+                </div>
+
+                <div id="wheelHostControls" class="hidden host-panel glass mt-20">
+                    <button id="spinBtn" class="btn primary full-width" style="font-size: 1.2rem; padding: 15px;">SPIN
+                        THE WHEEL!</button>
+                    <button id="restartWheelBtn" class="btn secondary full-width mt-10">Restart Game</button>
                 </div>
             </div>
-
-            <div id="wheelHostControls" class="hidden host-panel glass mt-20">
-                <button id="spinBtn" class="btn primary full-width" style="font-size: 1.2rem; padding: 15px;">SPIN THE WHEEL!</button>
-                <button id="restartWheelBtn" class="btn secondary full-width mt-10">Restart Game</button>
-            </div>
-        </div>
         </div>
     </div>
 
