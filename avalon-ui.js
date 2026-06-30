@@ -31,7 +31,7 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
 
     switch (state.phase) {
         case 'setup':
-            html += renderSetup(isHost, players);
+            html += renderSetup(isHost);
             break;
         case 'reveal_roles':
             html += renderRevealRoles(state, isHost, myId);
@@ -84,18 +84,7 @@ function renderScoreboard(state) {
     `;
 }
 
-function renderSetup(isHost, players) {
-    let pList = `<div class="mt-20 text-left" style="background: rgba(0,0,0,0.3); padding:15px; border-radius:8px;">
-        <h4 style="color:var(--accent-color); margin-bottom:10px;">Players Joined: ${Object.keys(players).length - 1}</h4>
-        <ul style="list-style:none; margin:0; padding:0; max-height:150px; overflow-y:auto;">`;
-    
-    Object.values(players).forEach(p => {
-        if (!p.isHost) {
-            pList += `<li style="padding:8px 5px; border-bottom:1px solid var(--glass-border);">${p.name}</li>`;
-        }
-    });
-    pList += `</ul></div>`;
-
+function renderSetup(isHost) {
     if (isHost) {
         return `
             <div class="glass text-center">
@@ -103,7 +92,6 @@ function renderSetup(isHost, players) {
                 <p>The game automatically assigns roles based on the player count.</p>
                 <p>Host does NOT play and acts only as the controller.</p>
                 <p class="text-danger mt-10">Requires 5-14 players (excluding Host).</p>
-                ${pList}
                 <button id="btnStartAvalon" class="btn primary full-width mt-20">Start Game</button>
             </div>
         `;
@@ -112,7 +100,6 @@ function renderSetup(isHost, players) {
             <div class="glass text-center">
                 <h2>Avalon Setup</h2>
                 <p>Waiting for Host to configure and start the game...</p>
-                ${pList}
             </div>
         `;
     }
@@ -140,7 +127,7 @@ function renderRevealRoles(state, isHost, myId) {
                 <div id="roleCardBack" style="width:200px; height:280px; background-color:#dcdcdc; border-radius:10px; cursor:pointer; display:flex; justify-content:center; align-items:center; color:#333; font-size:6rem; font-weight:bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5);">
                     ?
                 </div>
-                <img id="roleCardFront" src="${getAsset(myRole)}" class="hidden" style="width:200px; border-radius:10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" alt="Role">
+                <img id="roleCardFront" src="${getAsset(myRole)}" onerror="alert('Failed to load image at: ' + this.src); this.onerror=null;" class="hidden" style="width:200px; border-radius:10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" alt="Role">
             </div>
         </div>
     `;
