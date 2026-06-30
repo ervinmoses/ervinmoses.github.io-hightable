@@ -284,7 +284,8 @@ export async function checkQuestVotesComplete(state) {
                 scores: newScores,
                 questResults: newQuestResults,
                 roundLeader: null,
-                proposedTeam: []
+                proposedTeam: [],
+                failsTracker: 0
             });
         }
     }

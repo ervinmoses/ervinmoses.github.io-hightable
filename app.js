@@ -280,6 +280,8 @@ async function joinRoom(roomCode) {
     gameRoomCode.textContent = roomCode;
     const wheelRoomCode = document.getElementById('wheelRoomCode');
     if (wheelRoomCode) wheelRoomCode.textContent = roomCode;
+    const avalonRoomCode = document.getElementById('avalonRoomCode');
+    if (avalonRoomCode) avalonRoomCode.textContent = roomCode;
     myPlayerName.textContent = currentPlayer.name;
 
     if (currentPlayer.isHost) {
