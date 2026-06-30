@@ -16,7 +16,7 @@ let holdTimer = null;
 let currentInterval = null;
 
 // Helper to get asset paths
-const getAsset = (name) => `assets/avalon/${name}.jpg`;
+const getAsset = (name) => `./assets/avalon/${name}.jpg`;
 
 window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
     // Clear existing interval if any
@@ -89,14 +89,10 @@ function renderSetup(isHost) {
         return `
             <div class="glass text-center">
                 <h2>Avalon Setup</h2>
-                <p>Select Optional Roles:</p>
-                <div style="display:flex; flex-direction:column; align-items:start; padding:20px;">
-                    <label><input type="checkbox" id="role_percival"> Percival (Blue)</label>
-                    <label><input type="checkbox" id="role_morgana"> Morgana (Red)</label>
-                    <label><input type="checkbox" id="role_mordred"> Mordred (Red)</label>
-                    <label><input type="checkbox" id="role_oberon"> Oberon (Red)</label>
-                </div>
-                <button id="btnStartAvalon" class="btn primary full-width mt-10">Start Game</button>
+                <p>The game automatically assigns roles based on the player count.</p>
+                <p>Host does NOT play and acts only as the controller.</p>
+                <p class="text-danger mt-10">Requires 5-14 players (excluding Host).</p>
+                <button id="btnStartAvalon" class="btn primary full-width mt-20">Start Game</button>
             </div>
         `;
     } else {
@@ -110,22 +106,49 @@ function renderSetup(isHost) {
 }
 
 function renderRevealRoles(state, isHost, myId) {
-    const myRole = state.roles[myId];
     let hostControls = isHost ? `<button id="btnBeginNight" class="btn secondary full-width mt-20">Everyone Ready? Begin Night Phase</button>` : '';
+    
+    if (isHost) {
+        return `
+            <div class="glass text-center">
+                <h2>Host Control</h2>
+                <p>Wait for all players to view their roles.</p>
+                ${hostControls}
+            </div>
+        `;
+    }
+    
+    const myRole = state.roles[myId];
     return `
         <div class="glass text-center">
             <h2>Your Role</h2>
             <p>Tap and hold the card to secretly view your role.</p>
             <div id="roleCardContainer" class="mt-20" style="position: relative; display: inline-block; user-select: none;">
-                <img id="roleCardBack" src="assets/avalon/reject.jpg" style="width:200px; border-radius:10px; cursor:pointer;" alt="Card Back">
+                <img id="roleCardBack" src="./assets/avalon/reject.jpg" style="width:200px; border-radius:10px; cursor:pointer;" alt="Card Back">
                 <img id="roleCardFront" src="${getAsset(myRole)}" class="hidden" style="width:200px; border-radius:10px;" alt="Role">
             </div>
-            ${hostControls}
         </div>
     `;
 }
 
 function renderNightPhase(state, players, myId) {
+    if (isHost) {
+        currentInterval = setInterval(() => {
+            const now = Date.now();
+            const remain = Math.max(0, Math.ceil((state.nightEndTime - now) / 1000));
+            const el = document.getElementById('nightTimer');
+            if (el) el.textContent = remain;
+        }, 100);
+
+        return `
+            <div class="glass text-center" style="border: 2px solid var(--accent-color);">
+                <h2 class="text-danger">NIGHT PHASE</h2>
+                <p>Time remaining: <strong id="nightTimer">5</strong>s</p>
+                <div class="mt-20 text-muted">Players are reviewing night info...</div>
+            </div>
+        `;
+    }
+
     const myRole = state.roles[myId];
     let info = 'You open your eyes but see nothing.';
     
@@ -181,6 +204,7 @@ function renderTeamBuilding(state, players, isHost, myId) {
     // 1. Show all players and if they are leader
     let pList = `<div class="wheel-player-grid mt-10">`;
     Object.keys(players).forEach(id => {
+        if (players[id].isHost) return;
         const isLeader = (id === leaderId);
         pList += `
             <div class="table-player-card glass wheel-player-box" style="position:relative;">
@@ -195,7 +219,9 @@ function renderTeamBuilding(state, players, isHost, myId) {
     let controls = '';
     if (!leaderId) {
         if (isHost) {
-            let opts = Object.keys(players).map(id => `<option value="${id}">${players[id].name}</option>`).join('');
+            let opts = Object.keys(players)
+                .filter(id => !players[id].isHost)
+                .map(id => `<option value="${id}">${players[id].name}</option>`).join('');
             controls = `
                 <div class="mt-20 glass">
                     <h4>Select Round Leader</h4>
@@ -208,12 +234,9 @@ function renderTeamBuilding(state, players, isHost, myId) {
         }
     } else {
         if (myId === leaderId) {
-            // Need QUEST_REQUIREMENTS mapping. For now, assume it's exposed or we compute it.
-            // Since we don't have it imported, we'll just show the checkboxes. The backend validates.
-            // Actually, we can fetch it or just let them pick and validate on server.
-            // But UI should tell them how many. We can't access QUEST_REQUIREMENTS easily here.
-            // I'll add a data attribute or just text "Select players".
-            let chks = Object.keys(players).map(id => `<label style="display:block; margin:10px 0;"><input type="checkbox" class="chk-team" value="${id}"> ${players[id].name}</label>`).join('');
+            let chks = Object.keys(players)
+                .filter(id => !players[id].isHost)
+                .map(id => `<label style="display:block; margin:10px 0;"><input type="checkbox" class="chk-team" value="${id}"> ${players[id].name}</label>`).join('');
             controls = `
                 <div class="mt-20 glass text-left">
                     <h4>You are the Leader! Propose a team:</h4>
@@ -246,7 +269,10 @@ function renderPublicVoting(state, players, isHost, myId) {
     let teamHtml = state.proposedTeam.map(id => `<span class="tag" style="background:var(--primary-color); padding:5px 10px; border-radius:20px; margin:5px; display:inline-block;">${players[id].name} <img src="${getAsset('team')}" style="width:20px; vertical-align:middle; border-radius:50%;"></span>`).join('');
 
     let votingControls = '';
-    if (!hasVoted) {
+    
+    if (isHost) {
+        votingControls = `<p class="mt-20 text-muted">Waiting for players to vote...</p>`;
+    } else if (!hasVoted) {
         votingControls = `
             <div style="display:flex; justify-content:space-around; margin-top:20px;">
                 <img src="${getAsset('approve')}" id="btnVoteApprove" style="width:120px; cursor:pointer; border-radius:10px; border:2px solid transparent;" class="vote-btn">
@@ -269,26 +295,31 @@ function renderPublicVoting(state, players, isHost, myId) {
 }
 
 function renderQuestVoting(state, players, isHost, myId) {
-    const isTeamMember = state.proposedTeam.includes(myId);
-    const hasVoted = state.questVotes && state.questVotes[myId];
-    const myRole = state.roles[myId];
-    const isEvil = ['assassin', 'morgana', 'mordred', 'minions', 'oberon'].includes(myRole);
-
     let content = '';
-    if (isTeamMember) {
-        if (!hasVoted) {
-            content = `
-                <h4>You are on the Quest!</h4>
-                <div style="display:flex; justify-content:space-around; margin-top:20px;">
-                    <img src="${getAsset('success')}" id="btnQuestSuccess" style="width:120px; cursor:pointer; border-radius:10px;">
-                    ${isEvil ? `<img src="${getAsset('fail')}" id="btnQuestFail" style="width:120px; cursor:pointer; border-radius:10px;">` : `<img src="${getAsset('fail')}" style="width:120px; opacity:0.3; filter:grayscale(100%);">`}
-                </div>
-            `;
-        } else {
-            content = `<p class="mt-20 text-muted">Quest vote cast. Waiting for others...</p>`;
-        }
-    } else {
+
+    if (isHost) {
         content = `<p class="mt-20 text-muted">The team is on the Quest. Waiting for their return...</p>`;
+    } else {
+        const isTeamMember = state.proposedTeam.includes(myId);
+        const hasVoted = state.questVotes && state.questVotes[myId];
+        const myRole = state.roles[myId];
+        const isEvil = ['assassin', 'morgana', 'mordred', 'minions', 'oberon'].includes(myRole);
+
+        if (isTeamMember) {
+            if (!hasVoted) {
+                content = `
+                    <h4>You are on the Quest!</h4>
+                    <div style="display:flex; justify-content:space-around; margin-top:20px;">
+                        <img src="${getAsset('success')}" id="btnQuestSuccess" style="width:120px; cursor:pointer; border-radius:10px;">
+                        ${isEvil ? `<img src="${getAsset('fail')}" id="btnQuestFail" style="width:120px; cursor:pointer; border-radius:10px;">` : `<img src="${getAsset('fail')}" style="width:120px; opacity:0.3; filter:grayscale(100%);">`}
+                    </div>
+                `;
+            } else {
+                content = `<p class="mt-20 text-muted">Quest vote cast. Waiting for others...</p>`;
+            }
+        } else {
+            content = `<p class="mt-20 text-muted">The team is on the Quest. Waiting for their return...</p>`;
+        }
     }
 
     return `
@@ -300,11 +331,20 @@ function renderQuestVoting(state, players, isHost, myId) {
 }
 
 function renderAssassination(state, players, myId) {
+    if (isHost) {
+        return `
+            <div class="glass text-center">
+                <h3>ASSASSINATION PHASE</h3>
+                <p>Good has 3 points! Waiting for the Assassin to take their shot...</p>
+            </div>
+        `;
+    }
+
     const myRole = state.roles[myId];
     
     if (myRole === 'assassin') {
         let opts = Object.keys(players)
-            .filter(id => id !== myId && !['morgana', 'mordred', 'minions', 'oberon'].includes(state.roles[id]))
+            .filter(id => id !== myId && !players[id].isHost && !['morgana', 'mordred', 'minions', 'oberon'].includes(state.roles[id]))
             .map(id => `<option value="${id}">${players[id].name}</option>`).join('');
             
         return `
@@ -349,12 +389,7 @@ function attachEventListeners(state, players, myId, isHost) {
     const btnStart = document.getElementById('btnStartAvalon');
     if (btnStart) {
         btnStart.onclick = () => {
-            startAvalonGame({
-                percival: document.getElementById('role_percival').checked,
-                morgana: document.getElementById('role_morgana').checked,
-                mordred: document.getElementById('role_mordred').checked,
-                oberon: document.getElementById('role_oberon').checked
-            });
+            startAvalonGame();
         };
     }
 

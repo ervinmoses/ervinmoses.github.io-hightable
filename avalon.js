@@ -36,15 +36,9 @@ const DISTRIBUTION = {
 };
 
 export async function initAvalon(roomCode) {
-    // We start in setup phase where host chooses optional roles
+    // We start in setup phase where host starts the game
     await set(ref(db, `rooms/${roomCode}/avalonState`), {
-        phase: 'setup',
-        rolesConfig: {
-            percival: false,
-            morgana: false,
-            mordred: false,
-            oberon: false
-        }
+        phase: 'setup'
     });
 }
 
@@ -84,30 +78,30 @@ export function leaveAvalon() {
 // State Transitions & Logic
 // ========================
 
-export async function startAvalonGame(optionalRoles) {
+export async function startAvalonGame() {
     if (!isHost || !currentRoom) return;
     
     const playersSnapshot = await get(ref(db, `rooms/${currentRoom}/players`));
     const players = playersSnapshot.val();
-    const playerIds = Object.keys(players);
-    const count = playerIds.length;
+    
+    // Only non-hosts play
+    const playingIds = Object.keys(players).filter(id => !players[id].isHost);
+    const count = playingIds.length;
     
     if (count < 5 || count > 14) {
-        showAlert('Error', 'Avalon requires 5 to 14 players.');
+        showAlert('Error', 'Avalon requires 5 to 14 non-host players.');
         return;
     }
 
     const { good, evil } = DISTRIBUTION[count];
     
-    // Assign Roles
-    let goodRoles = ['merlin'];
-    if (optionalRoles.percival) goodRoles.push('percival');
+    // Auto-Assign Roles based on count
+    let goodRoles = ['merlin', 'percival'];
     while (goodRoles.length < good) goodRoles.push('servants');
     
-    let evilRoles = ['assassin'];
-    if (optionalRoles.morgana) evilRoles.push('morgana');
-    if (optionalRoles.mordred) evilRoles.push('mordred');
-    if (optionalRoles.oberon) evilRoles.push('oberon');
+    let evilRoles = ['assassin', 'morgana'];
+    if (count >= 7 && count !== 8 && count !== 9) evilRoles.push('oberon'); // 7, 10, 11+
+    if (count >= 9) evilRoles.push('mordred'); // 9, 10, 11+
     while (evilRoles.length < evil) evilRoles.push('minions');
     
     // Validate bounds
@@ -122,7 +116,7 @@ export async function startAvalonGame(optionalRoles) {
     }
     
     let assignedRoles = {};
-    playerIds.forEach((id, index) => {
+    playingIds.forEach((id, index) => {
         assignedRoles[id] = allRoles[index];
     });
 
@@ -168,8 +162,8 @@ export async function submitTeam(teamIds) {
     const s = await get(ref(db, `rooms/${currentRoom}/avalonState`));
     const state = s.val();
     
-    const pCount = Object.keys(playersData).length;
-    const req = QUEST_REQUIREMENTS[pCount][state.scores.currentQuest];
+    const playingCount = Object.keys(playersData).filter(id => !playersData[id].isHost).length;
+    const req = QUEST_REQUIREMENTS[playingCount][state.scores.currentQuest];
     
     if (teamIds.length !== req) {
         showAlert('Error', `You must select exactly ${req} players.`);
@@ -194,8 +188,8 @@ export async function checkPublicVotesComplete(state) {
     if (!isHost) return;
     if (state.phase !== 'public_voting') return;
     
-    const pIds = Object.keys(playersData);
-    if (Object.keys(state.publicVotes || {}).length === pIds.length) {
+    const playingIds = Object.keys(playersData).filter(id => !playersData[id].isHost);
+    if (Object.keys(state.publicVotes || {}).length === playingIds.length) {
         let approveCount = 0;
         let rejectCount = 0;
         Object.values(state.publicVotes).forEach(v => {
@@ -246,9 +240,9 @@ export async function checkQuestVotesComplete(state) {
             if (v === 'fail') failsCount++;
         });
         
-        const pCount = Object.keys(playersData).length;
+        const playingCount = Object.keys(playersData).filter(id => !playersData[id].isHost).length;
         let requiredFails = 1;
-        if (state.scores.currentQuest === 3 && pCount >= 7) {
+        if (state.scores.currentQuest === 3 && playingCount >= 7) {
             requiredFails = 2;
         }
         
