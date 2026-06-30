@@ -183,43 +183,35 @@ createGameBtn.addEventListener('click', async () => {
     createGameBtn.disabled = true;
     setTimeout(() => createGameBtn.disabled = false, 2000);
 
+    // Cleanup old orphaned rooms hosted by this user
+    const roomsSnap = await get(ref(db, 'rooms'));
+    const allRooms = roomsSnap.val();
+    if (allRooms) {
+        Object.keys(allRooms).forEach(async (rCode) => {
+            if (allRooms[rCode].host === currentPlayer.id) {
+                await remove(ref(db, `rooms/${rCode}`));
+            }
+        });
+    }
+
     const roomCode = generateRoomCode();
     currentPlayer.isHost = true;
     currentPlayer.roomCode = roomCode;
 
     // Create room in Firebase
     const roomRef = ref(db, `rooms/${roomCode}`);
-    
-    if (currentGameType === 'avalon') {
-        await set(roomRef, {
-            host: currentPlayer.id,
-            status: 'playing',
-            gameType: 'avalon',
-            createdAt: Date.now(),
-            players: {
-                [currentPlayer.id]: {
-                    name: currentPlayer.name,
-                    isHost: true
-                }
-            },
-            avalonState: {
-                phase: 'setup'
+    await set(roomRef, {
+        host: currentPlayer.id,
+        status: 'waiting',
+        gameType: currentGameType,
+        createdAt: Date.now(),
+        players: {
+            [currentPlayer.id]: {
+                name: currentPlayer.name,
+                isHost: true
             }
-        });
-    } else {
-        await set(roomRef, {
-            host: currentPlayer.id,
-            status: 'waiting',
-            gameType: currentGameType,
-            createdAt: Date.now(),
-            players: {
-                [currentPlayer.id]: {
-                    name: currentPlayer.name,
-                    isHost: true
-                }
-            }
-        });
-    }
+        }
+    });
 
     joinRoom(roomCode);
 });
