@@ -98,24 +98,26 @@ setTimeout(() => {
 }, 2000);
 
 function checkRegistration() {
-    const savedName = localStorage.getItem('playerName');
-    const savedId = localStorage.getItem('playerId');
-
     const tg = window.Telegram?.WebApp;
     const tgUser = tg?.initDataUnsafe?.user;
 
-    if (savedName && savedId) {
-        currentPlayer.name = savedName;
-        currentPlayer.id = savedId;
-        switchView('home');
-    } else if (tgUser && tgUser.first_name) {
+    if (tgUser && tgUser.first_name) {
         currentPlayer.name = tgUser.first_name;
         currentPlayer.id = tgUser.id.toString();
         localStorage.setItem('playerName', currentPlayer.name);
         localStorage.setItem('playerId', currentPlayer.id);
         switchView('home');
     } else {
-        switchView('registration');
+        const savedName = localStorage.getItem('playerName');
+        const savedId = localStorage.getItem('playerId');
+        
+        if (savedName && savedId) {
+            currentPlayer.name = savedName;
+            currentPlayer.id = savedId;
+            switchView('home');
+        } else {
+            switchView('registration');
+        }
     }
 }
 
