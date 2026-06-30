@@ -111,14 +111,16 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
 // MINI ROLE CARD (persistent)
 // ========================
 function renderMiniRoleCard(role) {
+    const isGood = GOOD_ROLES.includes(role);
+    const teamColor = isGood ? '#4fc3f7' : '#ef5350';
     return `
-        <div style="display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.4); border-radius:10px; padding:10px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.1);">
-            <div id="miniCardBack" style="width:50px; height:70px; background:#c8c8c8; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:bold; color:#555; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.5); flex-shrink:0; user-select:none;">?</div>
+        <div style="display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.4); border-radius:10px; padding:10px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.1); user-select:none;">
+            <div id="miniCardBack" style="width:50px; height:70px; background:linear-gradient(135deg,#2a2a4a,#1a1a2e); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:bold; color:#888; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.5); flex-shrink:0; border:1px solid rgba(255,255,255,0.15);">?</div>
             <img id="miniCardFront" src="${getAsset(role)}" class="hidden" style="width:50px; height:70px; border-radius:6px; object-fit:cover; box-shadow:0 2px 6px rgba(0,0,0,0.5); flex-shrink:0;">
-            <div>
-                <p style="margin:0; font-size:0.75rem; color:rgba(255,255,255,0.5);">YOUR ROLE</p>
-                <p style="margin:0; font-size:0.9rem; font-weight:bold; color:${GOOD_ROLES.includes(role) ? '#4fc3f7' : '#ef5350'};">${ROLE_LABEL[role] || role}</p>
-                <p style="margin:0; font-size:0.7rem; color:rgba(255,255,255,0.4);">Tap & hold to reveal</p>
+            <div style="flex:1; min-width:0;">
+                <p style="margin:0; font-size:0.7rem; color:rgba(255,255,255,0.4);">YOUR ROLE</p>
+                <p id="miniRoleLabel" style="margin:0; font-size:0.9rem; font-weight:bold; color:${teamColor}; filter:blur(6px); transition:filter 0.1s;">${ROLE_LABEL[role] || role}</p>
+                <p style="margin:0; font-size:0.65rem; color:rgba(255,255,255,0.3);">Hold card to reveal</p>
             </div>
         </div>
     `;
@@ -593,33 +595,56 @@ function attachEventListeners(state, players, myId, isHost) {
         const back = document.getElementById('roleCardBack');
         const descPanel = document.getElementById('roleDescPanel');
         const holdHint = document.getElementById('roleHoldHint');
-        const show = () => {
+
+        const showCard = () => {
             front?.classList.remove('hidden');
             back?.classList.add('hidden');
             descPanel?.classList.remove('hidden');
             if (holdHint) holdHint.style.display = 'none';
         };
-        const hide = () => {
+        const hideCard = () => {
             front?.classList.add('hidden');
             back?.classList.remove('hidden');
             descPanel?.classList.add('hidden');
             if (holdHint) holdHint.style.display = '';
+            window.removeEventListener('mouseup', hideCard);
+            window.removeEventListener('touchend', hideCard);
         };
-        roleCardContainer.addEventListener('mousedown', show);
-        roleCardContainer.addEventListener('touchstart', show, { passive: true });
-        window.addEventListener('mouseup', hide, { once: true });
+        roleCardContainer.addEventListener('mousedown', () => {
+            showCard();
+            window.addEventListener('mouseup', hideCard);
+        });
+        roleCardContainer.addEventListener('touchstart', () => {
+            showCard();
+            window.addEventListener('touchend', hideCard);
+        }, { passive: true });
     }
 
     // Mini role card (persistent in later phases)
     const miniBack = document.getElementById('miniCardBack');
     const miniFront = document.getElementById('miniCardFront');
-    if (miniBack && miniFront) {
-        const show = () => { miniFront.classList.remove('hidden'); miniBack.classList.add('hidden'); };
-        const hide = () => { miniFront.classList.add('hidden'); miniBack.classList.remove('hidden'); };
-        miniBack.addEventListener('mousedown', show);
-        miniBack.addEventListener('touchstart', show, { passive: true });
-        window.addEventListener('mouseup', hide, { once: true });
-        window.addEventListener('touchend', hide, { once: true });
+    const miniLabel = document.getElementById('miniRoleLabel');
+    if (miniBack) {
+        const showMini = () => {
+            miniFront?.classList.remove('hidden');
+            miniBack.classList.add('hidden');
+            if (miniLabel) miniLabel.style.filter = 'blur(0)';
+        };
+        const hideMini = () => {
+            miniFront?.classList.add('hidden');
+            miniBack.classList.remove('hidden');
+            if (miniLabel) miniLabel.style.filter = 'blur(6px)';
+            window.removeEventListener('mouseup', hideMini);
+            window.removeEventListener('touchend', hideMini);
+        };
+        miniBack.addEventListener('mousedown', () => {
+            showMini();
+            window.addEventListener('mouseup', hideMini);
+        });
+        miniBack.addEventListener('touchstart', () => {
+            showMini();
+            window.addEventListener('touchend', hideMini);
+        }, { passive: true });
     }
 
     // Night phase trigger
@@ -644,45 +669,39 @@ function attachEventListeners(state, players, myId, isHost) {
 
     if (checkboxContainer && btnSubmitTeam) {
         const updateCheckboxState = () => {
-            const checked = checkboxContainer.querySelectorAll('.chk-team:checked');
-            const count = checked.length;
+            const allChks = Array.from(checkboxContainer.querySelectorAll('.chk-team'));
+            const count = allChks.filter(c => c.checked).length;
+
             if (selCountEl) selCountEl.textContent = `Selected: ${count} / ${req}`;
 
-            const allChks = checkboxContainer.querySelectorAll('.chk-team');
             allChks.forEach(chk => {
+                const label = chk.closest('label');
                 if (!chk.checked && count >= req) {
                     chk.disabled = true;
-                    chk.closest('label')?.style.setProperty('opacity', '0.4');
+                    if (label) label.style.opacity = '0.4';
                 } else {
                     chk.disabled = false;
-                    chk.closest('label')?.style.setProperty('opacity', '1');
+                    if (label) label.style.opacity = '1';
                 }
             });
 
-            if (btnSubmitTeam) {
-                btnSubmitTeam.disabled = count !== req;
-                btnSubmitTeam.textContent = count === req ? `✓ Propose Team (${req})` : `Propose Team (select ${req})`;
-            }
+            btnSubmitTeam.disabled = count !== req;
+            btnSubmitTeam.textContent = count === req
+                ? `✓ Propose Team (${req} selected)`
+                : `Select ${req - count} more player${req - count !== 1 ? 's' : ''}`;
         };
 
+        // Use click on label, not change on checkbox, for mobile reliability
         checkboxContainer.querySelectorAll('.chk-team').forEach(chk => {
             chk.addEventListener('change', updateCheckboxState);
         });
-        updateCheckboxState(); // run on load
-    }
 
-    if (btnSubmitTeam && !checkboxContainer) {
         btnSubmitTeam.onclick = () => {
-            const chks = document.querySelectorAll('.chk-team:checked');
-            const ids = Array.from(chks).map(c => c.value);
-            submitTeam(ids);
+            const ids = Array.from(checkboxContainer.querySelectorAll('.chk-team:checked')).map(c => c.value);
+            if (ids.length === req) submitTeam(ids);
         };
-    } else if (btnSubmitTeam) {
-        btnSubmitTeam.onclick = () => {
-            const chks = checkboxContainer.querySelectorAll('.chk-team:checked');
-            const ids = Array.from(chks).map(c => c.value);
-            submitTeam(ids);
-        };
+
+        updateCheckboxState();
     }
 
     // Voting buttons
