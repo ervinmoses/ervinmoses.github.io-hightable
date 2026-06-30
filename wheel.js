@@ -44,6 +44,7 @@ export function joinWheelListener(roomCode, playerId, hostStatus) {
         
         wheelPlayerGrid.innerHTML = '';
         Object.keys(players).forEach(id => {
+            const p = players[id];
             const isHostP = p.isHost;
             const div = document.createElement('div');
             div.className = 'table-player-card glass wheel-player-box';
@@ -90,26 +91,43 @@ function startSpinAnimation(winnerId) {
     if (spinBtn) spinBtn.disabled = true;
     wheelWinnerDisplay.classList.add('hidden');
     
-    const boxes = document.querySelectorAll('.wheel-player-box');
+    const boxes = Array.from(document.querySelectorAll('.wheel-player-box'));
     if (boxes.length === 0) return;
     
-    let timeElapsed = 0;
-    const spinDuration = 3000;
-    const intervalTime = 100;
+    if (animationInterval) {
+        clearInterval(animationInterval);
+        clearTimeout(animationInterval);
+    }
     
-    if (animationInterval) clearInterval(animationInterval);
+    const winnerIndex = boxes.findIndex(b => b.id === `wheel-player-${winnerId}`);
+    if (winnerIndex === -1) {
+        finishSpin(winnerId);
+        return;
+    }
     
-    animationInterval = setInterval(() => {
+    let currentIndex = 0;
+    const rounds = 4;
+    const totalSteps = (rounds * boxes.length) + winnerIndex;
+    let currentStep = 0;
+    
+    function nextStep() {
         boxes.forEach(b => b.classList.remove('active-spin'));
-        const randomIndex = Math.floor(Math.random() * boxes.length);
-        boxes[randomIndex].classList.add('active-spin');
+        boxes[currentIndex % boxes.length].classList.add('active-spin');
         
-        timeElapsed += intervalTime;
-        if (timeElapsed >= spinDuration) {
-            clearInterval(animationInterval);
+        currentStep++;
+        
+        if (currentStep <= totalSteps) {
+            const progress = currentStep / totalSteps;
+            const delay = 40 + (Math.pow(progress, 3) * 360);
+            
+            animationInterval = setTimeout(nextStep, delay);
+            currentIndex++;
+        } else {
             finishSpin(winnerId);
         }
-    }, intervalTime);
+    }
+    
+    nextStep();
 }
 
 function finishSpin(winnerId) {
