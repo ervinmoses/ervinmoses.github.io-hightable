@@ -31,7 +31,7 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
 
     switch (state.phase) {
         case 'setup':
-            html += renderSetup(isHost);
+            html += renderSetup(isHost, players);
             break;
         case 'reveal_roles':
             html += renderRevealRoles(state, isHost, myId);
@@ -84,7 +84,18 @@ function renderScoreboard(state) {
     `;
 }
 
-function renderSetup(isHost) {
+function renderSetup(isHost, players) {
+    let pList = `<div class="mt-20 text-left" style="background: rgba(0,0,0,0.3); padding:15px; border-radius:8px;">
+        <h4 style="color:var(--accent-color); margin-bottom:10px;">Players Joined: ${Object.keys(players).length - 1}</h4>
+        <ul style="list-style:none; margin:0; padding:0; max-height:150px; overflow-y:auto;">`;
+    
+    Object.values(players).forEach(p => {
+        if (!p.isHost) {
+            pList += `<li style="padding:8px 5px; border-bottom:1px solid var(--glass-border);">${p.name}</li>`;
+        }
+    });
+    pList += `</ul></div>`;
+
     if (isHost) {
         return `
             <div class="glass text-center">
@@ -92,6 +103,7 @@ function renderSetup(isHost) {
                 <p>The game automatically assigns roles based on the player count.</p>
                 <p>Host does NOT play and acts only as the controller.</p>
                 <p class="text-danger mt-10">Requires 5-14 players (excluding Host).</p>
+                ${pList}
                 <button id="btnStartAvalon" class="btn primary full-width mt-20">Start Game</button>
             </div>
         `;
@@ -100,6 +112,7 @@ function renderSetup(isHost) {
             <div class="glass text-center">
                 <h2>Avalon Setup</h2>
                 <p>Waiting for Host to configure and start the game...</p>
+                ${pList}
             </div>
         `;
     }

@@ -224,9 +224,25 @@ onValue(ref(db, 'rooms'), (snapshot) => {
                 return;
             }
 
-            // Only show rooms in 'waiting' state so players can join
+            // Check if room is joinable
+            let isJoinable = false;
             const rGameType = room.gameType || '21';
-            if (room.status === 'waiting' && rGameType === currentGameType) {
+            
+            if (room.status === 'waiting') {
+                isJoinable = true;
+            } else if (room.status === 'playing') {
+                if (rGameType === 'avalon') {
+                    if (room.avalonState && room.avalonState.phase === 'setup') {
+                        isJoinable = true;
+                    }
+                } else if (rGameType === 'wheel') {
+                    isJoinable = true;
+                } else if (rGameType === '21') {
+                    isJoinable = true;
+                }
+            }
+
+            if (isJoinable && rGameType === currentGameType) {
                 hasActiveRooms = true;
                 
                 const roomBtn = document.createElement('button');
