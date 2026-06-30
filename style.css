@@ -665,3 +665,17 @@ select {
     font-weight: bold;
 }
 
+/* Avalon Custom */
+.vote-btn {
+    transition: transform 0.2s, opacity 0.2s;
+}
+.vote-btn:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+.chk-team {
+    transform: scale(1.5);
+    margin-right: 15px;
+    accent-color: var(--accent-color);
+}
+

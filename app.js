@@ -1,7 +1,8 @@
 import { db } from './firebase-config.js?v=22';
 import { ref, set, onValue, push, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-import { initGame, joinGameListener, leaveGame } from './game.js?v=22';
+import { initGame, joinGameListener, leaveGame } from './21card.js?v=22';
 import { initWheelGame, joinWheelListener, leaveWheelGame } from './wheel.js?v=22';
+import { initAvalon, joinAvalonListener, leaveAvalon } from './avalon.js?v=22';
 
 // ---- DOM Elements ----
 const views = document.querySelectorAll('.view');
@@ -153,8 +154,11 @@ backToHomeBtn.addEventListener('click', () => {
     switchView('home');
 });
 
-// Coming Soon Alerts
-avalonBtn.addEventListener('click', () => showAlert('Coming Soon', 'Avalon is currently in development!'));
+avalonBtn.addEventListener('click', () => {
+    currentGameType = 'avalon';
+    document.getElementById('lobbyTitle').textContent = 'Avalon Lobby';
+    switchView('lobby');
+});
 
 export let currentGameType = '21';
 
@@ -310,6 +314,9 @@ async function joinRoom(roomCode) {
             if (currentGameType === 'wheel') {
                 switchView('wheelGame');
                 joinWheelListener(roomCode, currentPlayer.id, currentPlayer.isHost);
+            } else if (currentGameType === 'avalon') {
+                switchView('avalonGame');
+                joinAvalonListener(roomCode, currentPlayer.id, currentPlayer.isHost);
             } else {
                 switchView('game');
                 joinGameListener(roomCode, currentPlayer.id, currentPlayer.isHost);
@@ -325,6 +332,10 @@ async function joinRoom(roomCode) {
                 leaveWheelGame();
                 switchView('lobby');
             }
+            if (document.getElementById('avalonGame') && document.getElementById('avalonGame').classList.contains('active')) {
+                leaveAvalon();
+                switchView('lobby');
+            }
         }
     });
 }
@@ -335,6 +346,8 @@ startGameBtn.addEventListener('click', async () => {
     // Initialize game state in Firebase
     if (currentGameType === 'wheel') {
         await initWheelGame(currentPlayer.roomCode);
+    } else if (currentGameType === 'avalon') {
+        await initAvalon(currentPlayer.roomCode);
     } else {
         await initGame(currentPlayer.roomCode);
     }
@@ -351,6 +364,14 @@ leaveGameBtn.addEventListener('click', () => {
 const leaveWheelBtn = document.getElementById('leaveWheelBtn');
 if (leaveWheelBtn) {
     leaveWheelBtn.addEventListener('click', () => {
+        leaveRoom();
+        switchView('lobby');
+    });
+}
+
+const leaveAvalonBtn = document.getElementById('leaveAvalonBtn');
+if (leaveAvalonBtn) {
+    leaveAvalonBtn.addEventListener('click', () => {
         leaveRoom();
         switchView('lobby');
     });
@@ -376,6 +397,7 @@ async function leaveRoom() {
         
         leaveGame(); // Clean up game listeners
         leaveWheelGame(); // Clean up wheel listeners
+        leaveAvalon(); // Clean up avalon listeners
         
         currentPlayer.roomCode = null;
         currentPlayer.isHost = false;
