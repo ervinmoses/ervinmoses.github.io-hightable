@@ -9,8 +9,9 @@ import {
     checkQuestVotesComplete,
     assassinate,
     resetAvalonGame,
-    QUEST_REQUIREMENTS
-} from './avalon.js?v=22';
+    QUEST_REQUIREMENTS,
+    continueQuestResult
+} from './avalon.js?v=29';
 
 const avalonGameArea = document.getElementById('avalonGameArea');
 let currentInterval = null;
@@ -97,6 +98,9 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
             break;
         case 'assassination':
             html += renderAssassination(state, players, myId, isHost);
+            break;
+        case 'quest_result':
+            html += renderQuestResult(state, players, isHost);
             break;
         case 'game_over':
             html += renderGameOver(state, isHost, players);
@@ -239,18 +243,18 @@ function renderRevealRoles(state, isHost, myId) {
         <div class="glass text-center">
             <h2>🌙 Your Role</h2>
             <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Keep this secret! <strong>Tap and hold</strong> the card to reveal.</p>
-            <div id="roleCardContainer" style="margin:20px auto; position:relative; display:inline-block; user-select:none;">
-                <div id="roleCardBack" style="width:200px; height:280px; background:linear-gradient(135deg,#2a2a4a,#1a1a2e); border-radius:14px; cursor:pointer; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#888; font-size:5rem; font-weight:bold; box-shadow:0 8px 24px rgba(0,0,0,0.6); border:2px solid rgba(255,255,255,0.15);">
+            <div id="roleCardContainer" style="margin:20px auto; position:relative; width:200px; height:280px; user-select:none; cursor:pointer;">
+                <div id="roleCardBack" style="position:absolute; top:0; left:0; width:200px; height:280px; background:linear-gradient(135deg,#2a2a4a,#1a1a2e); border-radius:14px; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#888; font-size:5rem; font-weight:bold; box-shadow:0 8px 24px rgba(0,0,0,0.6); border:2px solid rgba(255,255,255,0.15);">
                     ?
                     <span style="font-size:0.7rem; color:rgba(255,255,255,0.3); margin-top:8px;">HOLD TO REVEAL</span>
                 </div>
-                <img id="roleCardFront" src="${getAsset(myRole)}" class="hidden" style="width:200px; height:280px; border-radius:14px; object-fit:cover; box-shadow:0 8px 24px rgba(0,0,0,0.6); position:absolute; top:0; left:0;" alt="${myRole}">
+                <img id="roleCardFront" src="${getAsset(myRole)}" class="hidden" style="position:absolute; top:0; left:0; width:200px; height:280px; border-radius:14px; object-fit:cover; box-shadow:0 8px 24px rgba(0,0,0,0.6);" alt="${myRole}">
             </div>
-            <div id="roleDescPanel" class="hidden" style="margin-top:10px; padding:14px 16px; background:rgba(0,0,0,0.55); border-radius:10px; border:1px solid ${teamColor}40; text-align:left;">
+            <div id="roleDescPanel" class="hidden" style="margin-top:14px; padding:14px 16px; background:rgba(0,0,0,0.55); border-radius:10px; border:1px solid ${teamColor}40; text-align:left;">
                 <p style="color:${teamColor}; font-weight:bold; font-size:0.85rem; margin-bottom:6px;">${ROLE_LABEL[myRole]} — ${teamLabel}</p>
                 <p style="color:rgba(255,255,255,0.75); font-size:0.82rem; line-height:1.5; margin:0;">${desc}</p>
             </div>
-            <p id="roleHoldHint" style="color:rgba(255,255,255,0.35); font-size:0.75rem; margin-top:10px;">Hold card to see role & description</p>
+            <p id="roleHoldHint" style="color:rgba(255,255,255,0.35); font-size:0.75rem; margin-top:10px;">Hold card to see role &amp; description</p>
             <p style="color:rgba(255,255,255,0.25); font-size:0.7rem; margin-top:4px;">Wait for Host to begin Night Phase</p>
         </div>`;
 }
@@ -457,15 +461,10 @@ function renderPublicVoting(state, players, isHost, myId) {
         </div>`;
 }
 
-// ========================
-// PHASE 5: QUEST VOTING
-// ========================
 function renderQuestVoting(state, players, isHost, myId) {
     const proposedTeam = Array.isArray(state.proposedTeam) ? state.proposedTeam : [];
     const isTeamMember = proposedTeam.includes(myId);
     const hasVoted = state.questVotes?.[myId];
-    const myRole = state.roles?.[myId];
-    const isEvil = EVIL_ROLES.includes(myRole);
     const teamVotes = Object.keys(state.questVotes || {}).length;
 
     if (isHost) {
@@ -481,21 +480,21 @@ function renderQuestVoting(state, players, isHost, myId) {
     if (isTeamMember && !hasVoted) {
         content = `
             <h4 style="color:gold;">You are on the Quest!</h4>
-            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:16px;">${isEvil ? 'Choose Success or Fail:' : 'You must play Success:'}</p>
+            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:16px;">Choose your card wisely:</p>
             <div style="display:flex; justify-content:space-around; gap:12px;">
                 <div style="text-align:center; flex:1;">
-                    <img src="${getAsset('success')}" id="btnQuestSuccess" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(79,195,247,0.5);">
+                    <img src="${getAsset('success')}" id="btnQuestSuccess" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(79,195,247,0.5); transition:transform 0.15s;">
                     <p style="color:#4fc3f7; font-size:0.75rem; margin-top:4px;">SUCCESS</p>
                 </div>
-                <div style="text-align:center; flex:1; ${isEvil ? '' : 'opacity:0.3; pointer-events:none;'}">
-                    <img src="${getAsset('fail')}" ${isEvil ? 'id="btnQuestFail"' : ''} style="width:110px; ${isEvil ? 'cursor:pointer;' : ''} border-radius:12px; border:2px solid rgba(239,83,80,0.5);">
+                <div style="text-align:center; flex:1;">
+                    <img src="${getAsset('fail')}" id="btnQuestFail" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(239,83,80,0.5); transition:transform 0.15s;">
                     <p style="color:#ef5350; font-size:0.75rem; margin-top:4px;">FAIL</p>
                 </div>
             </div>`;
     } else if (isTeamMember && hasVoted) {
-        content = `<p style="color:rgba(255,255,255,0.5);">✓ Quest vote cast. Waiting for team...</p>`;
+        content = `<p style="color:rgba(255,255,255,0.5);">✓ Quest vote cast. Waiting for team... (${teamVotes}/${proposedTeam.length})</p>`;
     } else {
-        content = `<p style="color:rgba(255,255,255,0.5);">⏳ The team is on the Quest. Waiting for their return...</p>`;
+        content = `<p style="color:rgba(255,255,255,0.5);">⏳ The team is on the Quest. Waiting for their return... (${teamVotes}/${proposedTeam.length})</p>`;
     }
 
     return `
@@ -503,6 +502,60 @@ function renderQuestVoting(state, players, isHost, myId) {
             <h3>⚔ Quest Phase</h3>
             ${content}
         </div>`;
+}
+
+// ========================
+// QUEST RESULT
+// ========================
+function renderQuestResult(state, players, isHost) {
+    const r = state.questResultData || {};
+    const success = r.successCount ?? 0;
+    const fails = r.failsCount ?? 0;
+    const failed = r.questFailed ?? false;
+    const questNum = (state.scores?.currentQuest ?? 0); // already incremented in scores before coming here? No — questResult stores the COMPLETED quest number
+    
+    const resultColor = failed ? '#ef5350' : '#4fc3f7';
+    const resultText = failed ? '⚔ Quest Failed!' : '🛡 Quest Succeeded!';
+    const resultBg = failed ? 'rgba(198,40,40,0.2)' : 'rgba(21,101,192,0.2)';
+    const teamWin = failed ? 'Red Team' : 'Blue Team';
+
+    // Build card icons
+    let successIcons = '';
+    for (let i = 0; i < success; i++) successIcons += `<span style="font-size:1.8rem; margin:4px;">🛡</span>`;
+    let failIcons = '';
+    for (let i = 0; i < fails; i++) failIcons += `<span style="font-size:1.8rem; margin:4px;">⚔</span>`;
+
+    const hostBtn = isHost
+        ? `<button id="btnContinueQuest" class="btn primary full-width mt-20">Continue →</button>`
+        : `<p style="color:rgba(255,255,255,0.4); font-size:0.8rem; margin-top:16px;">Waiting for Host to continue...</p>`;
+
+    return `
+        <div class="glass text-center" style="border:3px solid ${resultColor}; background:${resultBg};">
+            <h2 style="color:${resultColor}; animation: questPulse 0.6s ease-out;">${resultText}</h2>
+            <p style="color:rgba(255,255,255,0.7); font-size:0.85rem; margin-bottom:16px;">${teamWin} wins this quest!</p>
+            <div style="display:flex; justify-content:space-around; margin:16px 0;">
+                <div style="text-align:center;">
+                    <p style="color:#4fc3f7; font-size:0.75rem; margin-bottom:4px;">SUCCESS</p>
+                    <div>${successIcons || '<span style="color:rgba(255,255,255,0.3);">—</span>'}</div>
+                    <p style="color:#4fc3f7; font-weight:bold; font-size:1.2rem; margin-top:6px;">${success}</p>
+                </div>
+                <div style="width:1px; background:rgba(255,255,255,0.1);"></div>
+                <div style="text-align:center;">
+                    <p style="color:#ef5350; font-size:0.75rem; margin-bottom:4px;">FAIL</p>
+                    <div>${failIcons || '<span style="color:rgba(255,255,255,0.3);">—</span>'}</div>
+                    <p style="color:#ef5350; font-weight:bold; font-size:1.2rem; margin-top:6px;">${fails}</p>
+                </div>
+            </div>
+            ${r.requiredFails > 1 ? `<p style="color:rgba(255,255,255,0.4); font-size:0.75rem;">(This quest required ${r.requiredFails} fails)</p>` : ''}
+            ${hostBtn}
+        </div>
+        <style>
+            @keyframes questPulse {
+                0% { transform: scale(0.8); opacity:0; }
+                60% { transform: scale(1.1); }
+                100% { transform: scale(1); opacity:1; }
+            }
+        </style>`;
 }
 
 // ========================
@@ -722,9 +775,23 @@ function attachEventListeners(state, players, myId, isHost) {
 
     // Quest voting
     const btnQuestSuccess = document.getElementById('btnQuestSuccess');
-    if (btnQuestSuccess) btnQuestSuccess.onclick = () => submitQuestVote('success');
+    if (btnQuestSuccess) {
+        btnQuestSuccess.onclick = () => {
+            btnQuestSuccess.style.transform = 'scale(0.95)';
+            submitQuestVote('success');
+        };
+    }
     const btnQuestFail = document.getElementById('btnQuestFail');
-    if (btnQuestFail) btnQuestFail.onclick = () => submitQuestVote('fail');
+    if (btnQuestFail) {
+        btnQuestFail.onclick = () => {
+            btnQuestFail.style.transform = 'scale(0.95)';
+            submitQuestVote('fail');
+        };
+    }
+
+    // Quest result continue (host only)
+    const btnContinueQuest = document.getElementById('btnContinueQuest');
+    if (btnContinueQuest) btnContinueQuest.onclick = () => continueQuestResult(state);
 
     // Assassination
     const btnAssassinate = document.getElementById('btnAssassinate');

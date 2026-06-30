@@ -1,6 +1,6 @@
-import { db } from './firebase-config.js?v=22';
+import { db } from './firebase-config.js?v=29';
 import { ref, set, onValue, get, update, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-import { showAlert } from './app.js?v=22';
+import { showAlert } from './app.js?v=29';
 
 let currentRoom = null;
 let myId = null;
@@ -234,55 +234,72 @@ export async function checkQuestVotesComplete(state) {
     if (state.phase !== 'quest_voting') return;
     
     const req = (state.proposedTeam || []).length;
-    if (Object.keys(state.questVotes || {}).length === req) {
-        let failsCount = 0;
-        Object.values(state.questVotes || {}).forEach(v => {
-            if (v === 'fail') failsCount++;
-        });
-        
-        const playingCount = Object.keys(playersData).filter(id => !playersData[id].isHost).length;
-        let requiredFails = 1;
-        // Quest 4 and 5 (index 3 and 4) require 2 fails if players >= 7
-        if ((state.scores.currentQuest === 3 || state.scores.currentQuest === 4) && playingCount >= 7) {
-            requiredFails = 2;
+    if (Object.keys(state.questVotes || {}).length < req) return; // not all voted yet
+
+    let failsCount = 0;
+    Object.values(state.questVotes || {}).forEach(v => {
+        if (v === 'fail') failsCount++;
+    });
+    
+    const playingCount = Object.keys(playersData).filter(id => !playersData[id].isHost).length;
+    let requiredFails = 1;
+    // Quest 4 and 5 (index 3 and 4) require 2 fails if players >= 7
+    if ((state.scores.currentQuest === 3 || state.scores.currentQuest === 4) && playingCount >= 7) {
+        requiredFails = 2;
+    }
+    
+    const questFailed = failsCount >= requiredFails;
+    let newScores = { ...state.scores };
+    if (questFailed) newScores.evil += 1;
+    else newScores.good += 1;
+    
+    let newQuestResults = [...(state.questResults || [])];
+    newQuestResults.push({ failed: questFailed, failsCount });
+    
+    // Show result screen first — host will press Continue to advance
+    await update(ref(db, `rooms/${currentRoom}/avalonState`), {
+        phase: 'quest_result',
+        scores: newScores,
+        questResults: newQuestResults,
+        questResultData: {
+            successCount: req - failsCount,
+            failsCount,
+            questFailed,
+            requiredFails
         }
-        
-        let questFailed = failsCount >= requiredFails;
-        let newScores = { ...state.scores };
-        if (questFailed) newScores.evil += 1;
-        else newScores.good += 1;
-        
-        let newQuestResults = [...(state.questResults || [])];
-        newQuestResults.push({
-            failed: questFailed,
-            failsCount: failsCount
+    });
+}
+
+export async function continueQuestResult(state) {
+    if (!isHost) return;
+    if (state.phase !== 'quest_result') return;
+
+    const { questFailed } = state.questResultData || {};
+    const newScores = state.scores;
+    const newQuestResults = state.questResults;
+
+    if (newScores.evil >= 3) {
+        await update(ref(db, `rooms/${currentRoom}/avalonState`), {
+            phase: 'game_over',
+            winner: 'evil',
+            reason: '3 Quests Failed — Evil wins!'
         });
-        
-        if (newScores.evil >= 3) {
-            await update(ref(db, `rooms/${currentRoom}/avalonState`), {
-                phase: 'game_over',
-                scores: newScores,
-                questResults: newQuestResults,
-                winner: 'evil',
-                reason: '3 Quests Failed'
-            });
-        } else if (newScores.good >= 3) {
-            await update(ref(db, `rooms/${currentRoom}/avalonState`), {
-                phase: 'assassination',
-                scores: newScores,
-                questResults: newQuestResults
-            });
-        } else {
-            newScores.currentQuest += 1;
-            await update(ref(db, `rooms/${currentRoom}/avalonState`), {
-                phase: 'team_building',
-                scores: newScores,
-                questResults: newQuestResults,
-                roundLeader: null,
-                proposedTeam: [],
-                failsTracker: 0
-            });
-        }
+    } else if (newScores.good >= 3) {
+        await update(ref(db, `rooms/${currentRoom}/avalonState`), {
+            phase: 'assassination',
+        });
+    } else {
+        const nextQuest = newScores.currentQuest + 1;
+        await update(ref(db, `rooms/${currentRoom}/avalonState`), {
+            phase: 'team_building',
+            scores: { ...newScores, currentQuest: nextQuest },
+            roundLeader: null,
+            proposedTeam: [],
+            publicVotes: {},
+            questVotes: {},
+            questResultData: null,
+            failsTracker: 0
+        });
     }
 }
 
