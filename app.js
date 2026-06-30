@@ -189,18 +189,37 @@ createGameBtn.addEventListener('click', async () => {
 
     // Create room in Firebase
     const roomRef = ref(db, `rooms/${roomCode}`);
-    await set(roomRef, {
-        host: currentPlayer.id,
-        status: 'waiting',
-        gameType: currentGameType,
-        createdAt: Date.now(),
-        players: {
-            [currentPlayer.id]: {
-                name: currentPlayer.name,
-                isHost: true
+    
+    if (currentGameType === 'avalon') {
+        await set(roomRef, {
+            host: currentPlayer.id,
+            status: 'playing',
+            gameType: 'avalon',
+            createdAt: Date.now(),
+            players: {
+                [currentPlayer.id]: {
+                    name: currentPlayer.name,
+                    isHost: true
+                }
+            },
+            avalonState: {
+                phase: 'setup'
             }
-        }
-    });
+        });
+    } else {
+        await set(roomRef, {
+            host: currentPlayer.id,
+            status: 'waiting',
+            gameType: currentGameType,
+            createdAt: Date.now(),
+            players: {
+                [currentPlayer.id]: {
+                    name: currentPlayer.name,
+                    isHost: true
+                }
+            }
+        });
+    }
 
     joinRoom(roomCode);
 });
@@ -224,9 +243,19 @@ onValue(ref(db, 'rooms'), (snapshot) => {
                 return;
             }
 
-            // Only show rooms in 'waiting' state so players can join
+            // Check if room is joinable
+            let isJoinable = false;
             const rGameType = room.gameType || '21';
-            if (room.status === 'waiting' && rGameType === currentGameType) {
+            
+            if (room.status === 'waiting') {
+                isJoinable = true;
+            } else if (room.status === 'playing' && rGameType === 'avalon') {
+                if (room.avalonState && room.avalonState.phase === 'setup') {
+                    isJoinable = true;
+                }
+            }
+
+            if (isJoinable && rGameType === currentGameType) {
                 hasActiveRooms = true;
                 
                 const roomBtn = document.createElement('button');
