@@ -8,7 +8,8 @@ import {
     submitQuestVote,
     checkQuestVotesComplete,
     assassinate,
-    resetAvalonGame
+    resetAvalonGame,
+    QUEST_REQUIREMENTS
 } from './avalon.js?v=22';
 
 const avalonGameArea = document.getElementById('avalonGameArea');
@@ -206,8 +207,8 @@ function renderNightPhase(state, players, myId) {
         <div class="glass text-center" style="border: 2px solid var(--accent-color);">
             <h2 class="text-danger">NIGHT PHASE</h2>
             <p>Time remaining: <strong id="nightTimer">5</strong>s</p>
-            <div class="mt-20" style="padding:20px; background:rgba(0,0,0,0.5); border-radius:8px;">
-                <h3 style="color:#fff;">${info}</h3>
+            <div class="mt-20" style="padding:20px; background:rgba(0,0,0,0.85); border-radius:8px;">
+                <h3 style="color:rgba(255,255,255,0.25); font-size:1rem; font-weight:normal;">${info}</h3>
             </div>
         </div>
     `;
@@ -249,16 +250,19 @@ function renderTeamBuilding(state, players, isHost, myId) {
         }
     } else {
         if (myId === leaderId) {
+            const playingCount = Object.keys(players).filter(id => !players[id].isHost).length;
+            const req = QUEST_REQUIREMENTS[playingCount][state.scores.currentQuest];
+            
             let chks = Object.keys(players)
-                .filter(id => !players[id].isHost)
+                .filter(id => !players[id].isHost && id !== leaderId) // Leader cannot choose themselves
                 .map(id => `<label style="display:block; margin:10px 0;"><input type="checkbox" class="chk-team" value="${id}"> ${players[id].name}</label>`).join('');
             controls = `
                 <div class="mt-20 glass text-left">
-                    <h4>You are the Leader! Propose a team:</h4>
+                    <h4>You are the Leader! Propose a team of ${req}:</h4>
                     <div class="mt-10 mb-10" style="padding:10px; background:rgba(0,0,0,0.3); border-radius:5px;">
                         ${chks}
                     </div>
-                    <button id="btnSubmitTeam" class="btn primary full-width">Propose Team</button>
+                    <button id="btnSubmitTeam" class="btn primary full-width">Propose Team (${req})</button>
                 </div>
             `;
         } else {

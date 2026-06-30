@@ -9,7 +9,7 @@ let avalonListeners = [];
 let playersData = {};
 
 // Game Constants
-const QUEST_REQUIREMENTS = {
+export const QUEST_REQUIREMENTS = {
     5:  [2, 3, 2, 3, 3],
     6:  [2, 3, 4, 3, 4],
     7:  [2, 3, 3, 4, 4], // Q4 needs 2 fails
@@ -242,7 +242,8 @@ export async function checkQuestVotesComplete(state) {
         
         const playingCount = Object.keys(playersData).filter(id => !playersData[id].isHost).length;
         let requiredFails = 1;
-        if (state.scores.currentQuest === 3 && playingCount >= 7) {
+        // Quest 4 and 5 (index 3 and 4) require 2 fails if players >= 7
+        if ((state.scores.currentQuest === 3 || state.scores.currentQuest === 4) && playingCount >= 7) {
             requiredFails = 2;
         }
         
