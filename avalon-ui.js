@@ -124,8 +124,10 @@ function renderRevealRoles(state, isHost, myId) {
             <h2>Your Role</h2>
             <p>Tap and hold the card to secretly view your role.</p>
             <div id="roleCardContainer" class="mt-20" style="position: relative; display: inline-block; user-select: none;">
-                <img id="roleCardBack" src="./assets/avalon/reject.jpg" style="width:200px; border-radius:10px; cursor:pointer;" alt="Card Back">
-                <img id="roleCardFront" src="${getAsset(myRole)}" class="hidden" style="width:200px; border-radius:10px;" alt="Role">
+                <div id="roleCardBack" style="width:200px; height:280px; background-color:#dcdcdc; border-radius:10px; cursor:pointer; display:flex; justify-content:center; align-items:center; color:#333; font-size:6rem; font-weight:bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5);">
+                    ?
+                </div>
+                <img id="roleCardFront" src="${getAsset(myRole)}" class="hidden" style="width:200px; border-radius:10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" alt="Role">
             </div>
         </div>
     `;
