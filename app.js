@@ -94,8 +94,8 @@ setTimeout(() => {
     switchView('splash-2');
     setTimeout(() => {
         checkRegistration();
-    }, 3000);
-}, 2000);
+    }, 4000);
+}, 3000);
 
 function checkRegistration() {
     const tg = window.Telegram?.WebApp;

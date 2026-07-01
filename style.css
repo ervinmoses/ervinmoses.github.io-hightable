@@ -55,6 +55,23 @@ body {
     to { opacity: 1; }
 }
 
+@keyframes glowPulse {
+    0% { text-shadow: 0 0 5px rgba(212, 175, 55, 0.5), 0 0 10px rgba(212, 175, 55, 0.3); }
+    50% { text-shadow: 0 0 20px rgba(212, 175, 55, 1), 0 0 30px rgba(212, 175, 55, 0.8); }
+    100% { text-shadow: 0 0 5px rgba(212, 175, 55, 0.5), 0 0 10px rgba(212, 175, 55, 0.3); }
+}
+
+@keyframes slideUpFade {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slowPan {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 .hidden {
     display: none !important;
 }
@@ -159,6 +176,7 @@ select {
     align-items: center;
     text-align: center;
     background-color: var(--bg-color);
+    background: radial-gradient(circle at center, rgba(30, 25, 0, 1) 0%, rgba(0, 0, 0, 1) 100%);
 }
 .splash.active {
     display: flex;
@@ -168,12 +186,13 @@ select {
     font-size: 2.5rem;
     color: var(--accent-color);
     letter-spacing: 2px;
+    animation: slideUpFade 1s ease-out forwards, glowPulse 3s infinite alternate ease-in-out;
 }
 
 .overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.4);
     z-index: 1;
 }
 
@@ -183,6 +202,13 @@ select {
     font-size: 1.2rem;
     padding: 30px;
     line-height: 1.5;
+    background: rgba(20, 20, 20, 0.85);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.1);
+    backdrop-filter: blur(15px);
+    max-width: 80%;
+    animation: slideUpFade 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 /* Auth / Registration */
@@ -237,39 +263,69 @@ select {
 }
 
 .game-card {
-    background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 20px;
+    background: linear-gradient(145deg, rgba(30, 30, 30, 0.6) 0%, rgba(10, 10, 10, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 25px 20px;
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    transition: transform 0.3s, box-shadow 0.3s;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.game-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    border-color: rgba(212, 175, 55, 0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(212, 175, 55, 0.2);
+    background: linear-gradient(145deg, rgba(40, 40, 40, 0.8) 0%, rgba(15, 15, 15, 1) 100%);
 }
 
 .game-card:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.98);
 }
 
 .game-card::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 4px; height: 100%;
-    background-color: var(--accent-color);
+    top: 0; left: 0; width: 100%; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+
+.game-card:hover::before {
+    opacity: 1;
 }
 
 .game-card.locked::before {
-    background-color: #555;
+    background: #555;
 }
 
 .game-card h3 {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-size: 1.4rem;
+    transition: color 0.3s;
+}
+
+.game-card:hover h3 {
+    color: var(--accent-color);
+}
+
+.game-card h3 svg {
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.game-card:hover h3 svg {
+    transform: scale(1.2) rotate(5deg);
+    color: var(--accent-color);
 }
 
 .game-card p {
-    color: #999;
-    font-size: 0.9rem;
+    color: #aaa;
+    font-size: 0.95rem;
+    line-height: 1.4;
 }
 
 /* Lobby Actions */
