@@ -380,7 +380,7 @@ async function joinRoom(roomCode, skipCheck = false) {
     if (wheelRoomCode) wheelRoomCode.textContent = roomCode;
     const avalonRoomCode = document.getElementById('avalonRoomCode');
     if (avalonRoomCode) avalonRoomCode.textContent = roomCode;
-    myPlayerName.textContent = currentPlayer.name;
+    if (myPlayerName) myPlayerName.textContent = currentPlayer.name;
 
     if (currentPlayer.isHost) {
         startGameBtn.classList.remove('hidden');
