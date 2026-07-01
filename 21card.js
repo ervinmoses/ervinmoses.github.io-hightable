@@ -650,7 +650,13 @@ if (giveCardBtn) {
             [`revealed/${currentTurnId}`]: revealed
         });
         
-        await advanceTurn(lastKnownState);
+        // Auto-pass if they hit the 5 card limit
+        if (hand.length >= 5) {
+            const passed = lastKnownState.passed || {};
+            passed[currentTurnId] = true;
+            await update(ref(db, `rooms/${currentRoom}/gameState/passed`), passed);
+            await advanceTurn({ ...lastKnownState, passed });
+        }
     };
 }
 
