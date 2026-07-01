@@ -212,6 +212,19 @@ select {
     z-index: 1;
 }
 
+.warning-img {
+    position: relative;
+    z-index: 2;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 20px;
+    border: 2px solid var(--accent-color);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+    animation: slideUpFade 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
 .warning-text {
     position: relative;
     z-index: 2;
