@@ -1,4 +1,4 @@
-import { db } from './firebase-config.js?v=22';
+import { db } from './firebase-config.js?v=29';
 import { ref, set, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 let currentRoom = null;
