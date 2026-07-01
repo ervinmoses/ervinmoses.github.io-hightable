@@ -246,13 +246,14 @@ function renderUI(state, players) {
                     cardEl.setAttribute('data-suit', suitSymbol);
                 } else {
                     cardEl.className = `playing-card back`;
+                    cardEl.style.cursor = 'pointer';
                 }
                 
                 cardEl.onclick = async () => {
                     if (!isRevealed) {
                         const newRevealed = [...myRevealed];
                         newRevealed[index] = true;
-                        await update(ref(db, `rooms/${currentRoom}/gameState/revealed/${myId}`), newRevealed);
+                        await set(ref(db, `rooms/${currentRoom}/gameState/revealed/${myId}`), newRevealed);
                     }
                 };
                 myCardsArea.appendChild(cardEl);
@@ -283,7 +284,8 @@ function renderUI(state, players) {
                 }
             }
 
-            if (currentTurnId === myId && (!state.passed || !state.passed[myId])) {
+            // Action buttons (ONLY HOST CAN SEE)
+            if (isHost && (!state.passed || !state.passed[currentTurnId])) {
                 if(actionButtonsRow) actionButtonsRow.classList.remove('hidden');
                 if(giveCardBtn) giveCardBtn.disabled = handLen >= 5;
             } else {
@@ -611,10 +613,11 @@ if (closeLoserAnimBtn) {
 
 if (passBtn) {
     passBtn.onclick = async () => {
-        if (!lastKnownState || lastKnownState.turnOrder[lastKnownState.currentTurnIndex] !== myId) return;
+        if (!isHost || !lastKnownState) return;
+        const currentTurnId = lastKnownState.turnOrder[lastKnownState.currentTurnIndex];
         
         const passed = lastKnownState.passed || {};
-        passed[myId] = true;
+        passed[currentTurnId] = true;
         
         await update(ref(db, `rooms/${currentRoom}/gameState/passed`), passed);
         await advanceTurn({ ...lastKnownState, passed });
@@ -623,11 +626,12 @@ if (passBtn) {
 
 if (giveCardBtn) {
     giveCardBtn.onclick = async () => {
-        if (!lastKnownState || lastKnownState.turnOrder[lastKnownState.currentTurnIndex] !== myId) return;
+        if (!isHost || !lastKnownState) return;
+        const currentTurnId = lastKnownState.turnOrder[lastKnownState.currentTurnIndex];
         
-        let hand = lastKnownState.hands[myId] || [];
+        let hand = lastKnownState.hands[currentTurnId] || [];
         if (hand.length >= 5) {
-            showAlert('Limit Reached', 'You cannot draw more than 5 cards.');
+            showAlert('Limit Reached', 'Player cannot draw more than 5 cards.');
             return;
         }
         
@@ -637,13 +641,13 @@ if (giveCardBtn) {
         const newCard = deck.pop();
         hand.push(newCard);
         
-        const revealed = lastKnownState.revealed[myId] || [];
+        const revealed = lastKnownState.revealed[currentTurnId] || [];
         revealed.push(false);
         
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
             deck: deck,
-            [`hands/${myId}`]: hand,
-            [`revealed/${myId}`]: revealed
+            [`hands/${currentTurnId}`]: hand,
+            [`revealed/${currentTurnId}`]: revealed
         });
         
         await advanceTurn(lastKnownState);
