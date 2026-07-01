@@ -650,12 +650,15 @@ if (giveCardBtn) {
             [`revealed/${currentTurnId}`]: revealed
         });
         
-        // Auto-pass if they hit the 5 card limit
+        // Always advance turn (Round Robin)
+        // If they just hit the 5 card limit, auto-pass them for future rounds
         if (hand.length >= 5) {
             const passed = lastKnownState.passed || {};
             passed[currentTurnId] = true;
             await update(ref(db, `rooms/${currentRoom}/gameState/passed`), passed);
             await advanceTurn({ ...lastKnownState, passed });
+        } else {
+            await advanceTurn(lastKnownState);
         }
     };
 }
