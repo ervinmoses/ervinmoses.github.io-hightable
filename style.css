@@ -88,12 +88,12 @@ h1, h2, h3 {
 
 /* Glassmorphism */
 .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
+    background: linear-gradient(145deg, rgba(30, 30, 30, 0.7) 0%, rgba(10, 10, 10, 0.9) 100%);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
-    box-shadow: var(--glass-shadow);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
     padding: 20px;
 }
 
@@ -110,23 +110,39 @@ h1, h2, h3 {
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     text-align: center;
 }
 
 .btn:active {
-    transform: scale(0.95);
+    transform: scale(0.95) !important;
 }
 
 .btn.primary {
-    background-color: var(--accent-color);
+    background: linear-gradient(135deg, #d4af37 0%, #aa8018 100%);
     color: #000;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+    background: linear-gradient(135deg, #e5c355 0%, #c49924 100%);
 }
 
 .btn.secondary {
-    background-color: transparent;
-    border: 2px solid var(--accent-color);
+    background: rgba(20, 20, 20, 0.8);
+    border: 1px solid var(--accent-color);
     color: var(--accent-color);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.btn.secondary:hover {
+    background: rgba(212, 175, 55, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(212, 175, 55, 0.2);
 }
 
 .btn.danger {
@@ -359,11 +375,24 @@ select {
     margin-bottom: 15px;
     max-height: 200px;
     overflow-y: auto;
+    padding: 0 5px;
 }
 .player-list li {
-    padding: 10px;
-    border-bottom: 1px solid var(--glass-border);
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
     font-size: 1rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+.player-list li:hover {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: rgba(212, 175, 55, 0.3);
+    transform: translateX(5px);
+    color: #fff;
 }
 
 /* Game Area */
@@ -586,6 +615,7 @@ select {
     height: 15px;
     background-color: var(--accent-color);
     margin: 5px auto 0 auto;
+    box-shadow: 0 0 5px var(--accent-color);
 }
 
 .org-connector {
@@ -595,6 +625,7 @@ select {
     position: relative;
     margin: 0 auto;
     z-index: 1;
+    box-shadow: 0 -2px 5px rgba(212, 175, 55, 0.3);
 }
 
 .org-connector::after {
@@ -606,6 +637,7 @@ select {
     height: 20px;
     background-color: var(--accent-color);
     transform: translateX(-50%);
+    box-shadow: 0 0 5px var(--accent-color);
 }
 
 .profile-node {
@@ -614,19 +646,29 @@ select {
     align-items: center;
     width: 100px;
     text-align: center;
+    transition: transform 0.3s ease;
+}
+.profile-node:hover {
+    transform: translateY(-5px);
+}
+.profile-node:hover .profile-circle {
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+    background: rgba(212, 175, 55, 0.15);
 }
 
 .profile-circle {
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background: var(--glass-bg);
+    background: rgba(20, 20, 20, 0.8);
     border: 2px solid var(--accent-color);
     display: flex;
     justify-content: center;
     align-items: center;
     margin-bottom: 8px;
     color: var(--accent-color);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
 }
 
 .profile-circle svg {
@@ -654,10 +696,16 @@ select {
 /* List Style for Rows 3,4,5 */
 .org-list-section {
     margin-bottom: 20px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 15px;
+    background: linear-gradient(145deg, rgba(30, 30, 30, 0.6) 0%, rgba(10, 10, 10, 0.9) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.org-list-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6), 0 0 15px rgba(212, 175, 55, 0.15);
 }
 
 .org-list-section h3 {
@@ -681,6 +729,13 @@ select {
     align-items: center;
     gap: 8px;
     text-align: center;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.org-list-item:hover {
+    transform: scale(1.05);
+}
+.org-list-item:hover .profile-circle {
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
 }
 
 .org-list-item .profile-circle {
