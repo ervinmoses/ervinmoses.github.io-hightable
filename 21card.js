@@ -403,7 +403,7 @@ async function advanceTurn(state) {
     }
     
     if (found) {
-        await update(ref(db, `rooms/${currentRoom}/gameState/currentTurnIndex`), nextIdx);
+        await set(ref(db, `rooms/${currentRoom}/gameState/currentTurnIndex`), nextIdx);
     } else {
         // Round is over. Calculate who lost.
         calculateLoser(state);
