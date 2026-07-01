@@ -141,87 +141,57 @@
 
         <div class="game-area">
 
-            <!-- 1. Shared/Private Cards Area -->
-            <div id="myTableArea">
-                <div class="glass text-center">
-                    <h4>My Cards</h4>
-                    <div id="myCardsArea" class="cards-container mt-10" style="justify-content: center;">
-                        <!-- My Cards rendered here -->
+            <!-- Row 1: Player List -->
+            <div id="playerListRow" class="player-list-row mt-10">
+                <!-- Players injected here via JS -->
+            </div>
+
+            <!-- Row 2: Adjust Player Position (Host Only) -->
+            <div id="adjustPositionRow" class="text-right mt-10 hidden">
+                <button id="adjustPositionBtn" class="btn secondary sm">Adjust Turn Order</button>
+            </div>
+
+            <!-- Row 3: Cards Area -->
+            <div id="cardsAreaRow" class="cards-area-row glass mt-10 text-center">
+                <h3 id="deathmatchTitle" class="text-danger hidden mb-10" style="letter-spacing: 2px;">DEATHMATCH</h3>
+                <div id="myCardsArea" class="cards-container" style="justify-content: center; min-height: 120px;">
+                    <!-- Cards injected here -->
+                </div>
+            </div>
+
+            <!-- Row 4: Actions -->
+            <div id="actionButtonsRow" class="action-buttons-row mt-10 hidden">
+                <button id="giveCardBtn" class="btn primary">Give Card (Hit)</button>
+                <button id="passBtn" class="btn danger">Pass (Stand)</button>
+            </div>
+
+            <!-- Row 4.5: Deathmatch Host Controls -->
+            <div id="dmHostControlsRow" class="host-panel glass mt-10 hidden danger-border text-center">
+                <h4 class="text-danger" style="margin-bottom: 5px;">Deathmatch Controls</h4>
+                <p style="font-size: 0.9em; margin-bottom: 10px;">Select losing condition:</p>
+                <div class="action-buttons-row">
+                    <button class="btn dm-btn secondary" data-cond="highest">Highest</button>
+                    <button class="btn dm-btn secondary" data-cond="middle">Middle</button>
+                    <button class="btn dm-btn secondary" data-cond="lower">Lowest</button>
+                </div>
+                <button id="dealDmCardsBtn" class="btn primary full-width mt-10 hidden">Deal Cards</button>
+            </div>
+
+            <!-- Row 5: Status -->
+            <div id="statusRow" class="status-row glass mt-10">
+                <div class="status-left">
+                    <div class="playing-card back style-only"></div>
+                </div>
+                <div class="status-right" id="currentPlayerTurnDisplay">
+                    <div id="turnProfilePic" class="profile-circle"></div>
+                    <div class="status-info">
+                        <div id="turnPlayerName" style="font-weight: bold;">Waiting...</div>
+                        <div id="turnPlayerCards" style="font-size: 0.9em; opacity: 0.8;">Cards: 0</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Spy Viewing Area -->
-            <div id="spyViewingArea" class="glass mt-10 hidden text-center">
-                <h4 id="spyPlayerNameTitle">Spying...</h4>
-                <div id="spyCardsArea" class="cards-container mt-10" style="justify-content: center;">
-                    <!-- Spied Cards rendered here -->
-                </div>
-            </div>
-
-            <!-- Deathmatch Table Area -->
-            <div id="deathmatchTableArea" class="glass mt-20 hidden text-center danger-border">
-                <h3 class="text-danger">TIE BREAKER TABLE</h3>
-                <div id="deathmatchTablePlayers" class="table-players-container mt-10">
-                    <!-- Deathmatch Cards rendered here -->
-                </div>
-            </div>
-
-            <!-- Deathmatch Reveal Area (For tied players only) -->
-            <div id="deathmatchRevealArea" class="hidden glass mt-20 text-center danger-border">
-                <h3 id="dmOpponentsText" class="text-danger">Deathmatch Tie-Breaker</h3>
-                <p>You have received 1 hidden card. Reveal it when ready.</p>
-                <button id="myRevealBtn" class="btn primary mt-10">Reveal My Card</button>
-            </div>
-
-            <!-- 2. Spy / Viewing Controls -->
-            <div id="viewingControls" class="glass mt-20 text-center">
-                <h3>View Table</h3>
-                <select id="viewPlayerSelect" class="full-width mb-10">
-                    <option value="">Select a player to view...</option>
-                </select>
-                <button id="backToMyTableBtn" class="btn secondary full-width hidden">Back to My Table</button>
-            </div>
-
-            <!-- 3. Player Status & Action -->
-            <div id="myStatusArea" class="player-status glass mb-10 mt-20"
-                style="flex-direction: column; align-items: stretch; text-align: center;">
-                <h3 id="myRoleText">Player: <span id="myPlayerName"></span></h3>
-                <div class="status-indicator mt-10 mb-10">
-                    My Total: <span id="myTotal">0</span> <span id="safeIndicator" class="hidden text-danger">
-                        (LOCK)</span>
-                </div>
-                <button id="lockSafeBtn" class="btn primary full-width mt-10">LOCK</button>
-            </div>
-
-            <!-- 4. Host View (Moved to bottom) -->
-            <div id="hostControls" class="hidden mt-20">
-                <div class="host-panel glass">
-                    <h3>Dealer Controls</h3>
-                    <select id="playerSelect">
-                        <option value="">Select a player...</option>
-                    </select>
-                    <div class="action-buttons">
-                        <button id="giveCardBtn" class="btn primary">Give Card</button>
-                        <button id="passBtn" class="btn secondary">Pass</button>
-                    </div>
-                </div>
-
-                <div id="deathmatchControls" class="hidden host-panel glass danger-border">
-                    <h3>Tie-Breaker: Deathmatch</h3>
-                    <p>Select losing condition:</p>
-                    <div class="action-buttons">
-                        <button class="btn dm-btn" data-cond="highest">Highest</button>
-                        <button class="btn dm-btn" data-cond="middle">Middle</button>
-                        <button class="btn dm-btn" data-cond="lower">Lower</button>
-                    </div>
-                    <button id="revealDeathmatchBtn" class="btn primary full-width mt-10 hidden">Start Deathmatch &
-                        Deal</button>
-                </div>
-
-                <button id="restartGameBtn" class="btn secondary full-width mt-20">Restart Game</button>
-            </div>
-
+            <button id="restartGameBtn" class="btn secondary full-width mt-20 hidden">Restart Game</button>
         </div>
     </div>
 
@@ -614,6 +584,26 @@
             <h1 id="massiveAlertText">YOU LOST</h1>
             <p id="massiveAlertSub">The round is over.</p>
             <button id="closeMassiveAlertBtn" class="btn primary mt-20">Continue</button>
+        </div>
+    </div>
+
+    <div id="loserAnimationOverlay" class="massive-alert hidden" style="flex-direction: column;">
+        <div id="loserAnimProfilePic" class="profile-circle" style="width: 120px; height: 120px; border-width: 4px; border-color: #ff3b30; margin-bottom: 20px; font-size: 3rem; background-color: #333;"></div>
+        <div class="alert-content text-center">
+            <h1 id="loserAnimNameText" style="color: #ff3b30; font-size: 3rem; word-break: break-word;">PLAYER LOST</h1>
+            <p id="loserAnimReasonSub" style="font-size: 1.2rem;">Lost Deathmatch.</p>
+            <button id="closeLoserAnimBtn" class="btn primary mt-20">Continue</button>
+        </div>
+    </div>
+
+    <div id="adjustPositionModal" class="modal-overlay hidden">
+        <div class="modal-content glass">
+            <h3>Adjust Turn Order</h3>
+            <ul id="draggablePlayerList" class="draggable-list mt-10">
+                <!-- Draggable items injected here -->
+            </ul>
+            <button id="saveTurnOrderBtn" class="btn primary full-width mt-10">Save Order</button>
+            <button id="cancelTurnOrderBtn" class="btn secondary full-width mt-10">Cancel</button>
         </div>
     </div>
 

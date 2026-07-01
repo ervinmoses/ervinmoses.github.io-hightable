@@ -45,7 +45,8 @@ export let currentPlayer = {
     name: '',
     id: '',
     isHost: false,
-    roomCode: null
+    roomCode: null,
+    photoUrl: ''
 };
 
 export let activeLobbyRef = null;
@@ -104,16 +105,20 @@ function checkRegistration() {
     if (tgUser && tgUser.first_name) {
         currentPlayer.name = tgUser.first_name;
         currentPlayer.id = tgUser.id.toString();
+        currentPlayer.photoUrl = tgUser.photo_url || '';
         localStorage.setItem('playerName', currentPlayer.name);
         localStorage.setItem('playerId', currentPlayer.id);
+        localStorage.setItem('playerPhoto', currentPlayer.photoUrl);
         switchView('home');
     } else {
         const savedName = localStorage.getItem('playerName');
         const savedId = localStorage.getItem('playerId');
+        const savedPhoto = localStorage.getItem('playerPhoto') || '';
         
         if (savedName && savedId) {
             currentPlayer.name = savedName;
             currentPlayer.id = savedId;
+            currentPlayer.photoUrl = savedPhoto;
             switchView('home');
         } else {
             switchView('registration');
@@ -131,8 +136,10 @@ registerBtn.addEventListener('click', () => {
     const id = 'user_' + Math.random().toString(36).substr(2, 9);
     currentPlayer.name = name;
     currentPlayer.id = id;
+    currentPlayer.photoUrl = '';
     localStorage.setItem('playerName', name);
     localStorage.setItem('playerId', id);
+    localStorage.setItem('playerPhoto', '');
     switchView('home');
 });
 
@@ -256,7 +263,8 @@ createGameBtn.addEventListener('click', async () => {
             players: {
                 [currentPlayer.id]: {
                     name: currentPlayer.name,
-                    isHost: true
+                    isHost: true,
+                    photoUrl: currentPlayer.photoUrl
                 }
             }
         });
@@ -354,7 +362,8 @@ async function joinRoom(roomCode, skipCheck = false) {
     const playersRef = ref(db, `rooms/${roomCode}/players/${currentPlayer.id}`);
     await set(playersRef, {
         name: currentPlayer.name,
-        isHost: currentPlayer.isHost
+        isHost: currentPlayer.isHost,
+        photoUrl: currentPlayer.photoUrl
     });
 
     // Auto-remove on disconnect

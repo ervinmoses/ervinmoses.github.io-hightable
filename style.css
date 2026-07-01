@@ -515,12 +515,20 @@ select {
 .playing-card.red { color: #ff3b30; }
 
 .playing-card::before, .playing-card::after {
-    content: attr(data-value);
     position: absolute;
-    font-size: 12px;
+    font-size: 16px;
+    font-weight: bold;
 }
-.playing-card::before { top: 5px; left: 5px; }
-.playing-card::after { bottom: 5px; right: 5px; transform: rotate(180deg); }
+.playing-card::before { 
+    content: attr(data-value);
+    top: 5px; 
+    left: 8px; 
+}
+.playing-card::after { 
+    content: attr(data-suit);
+    bottom: 5px; 
+    left: 8px; 
+}
 
 .playing-card.hidden-card {
     background: linear-gradient(135deg, #1a1a1a, #333);
@@ -843,3 +851,131 @@ select {
     accent-color: var(--accent-color);
 }
 
+/* --- 21 Card Game 5-Row Layout --- */
+.player-list-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+}
+.player-list-row::-webkit-scrollbar {
+    height: 6px;
+}
+.player-list-row::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 4px;
+}
+.player-box {
+    flex: 0 0 auto;
+    width: 70px;
+    height: 85px;
+    border: 1px solid white;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+.player-box .profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #333;
+    background-size: cover;
+    background-position: center;
+}
+.player-box .player-name {
+    font-size: 0.7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+    text-align: center;
+}
+
+.action-buttons-row {
+    display: flex;
+    gap: 10px;
+}
+.action-buttons-row .btn {
+    flex: 1;
+    padding: 15px;
+    font-size: 1.1rem;
+}
+
+.status-row {
+    display: flex;
+    border: 1px solid white;
+    border-radius: 12px;
+    padding: 10px;
+    align-items: center;
+    gap: 15px;
+}
+.status-left {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+.status-right {
+    flex: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.profile-pic-placeholder {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: #444;
+    background-size: cover;
+    background-position: center;
+}
+
+/* Card Back Style */
+.playing-card.back {
+    background: repeating-linear-gradient(25deg, #fff, #fff 4px, #f0f0f0 4px, #f0f0f0 8px);
+    border: 1px solid #ccc;
+    color: transparent;
+}
+.playing-card.back::before, .playing-card.back::after {
+    display: none;
+}
+.playing-card.style-only {
+    width: 45px;
+    height: 65px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    margin: 0;
+    animation: none;
+}
+.playing-card.mini-card {
+    width: 35px;
+    height: 50px;
+    margin: 0;
+}
+
+/* Draggable List */
+.draggable-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 250px;
+    overflow-y: auto;
+}
+.draggable-item {
+    padding: 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px dashed var(--glass-border);
+    border-radius: 8px;
+    cursor: grab;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.draggable-item:active {
+    cursor: grabbing;
+    background: rgba(255, 255, 255, 0.2);
+}

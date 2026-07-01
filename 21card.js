@@ -1,6 +1,6 @@
-import { db } from './firebase-config.js?v=22';
+import { db } from './firebase-config.js?v=32';
 import { ref, set, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-import { showAlert } from './app.js?v=22';
+import { showAlert } from './app.js?v=32';
 
 let currentRoom = null;
 let myId = null;
@@ -8,76 +8,41 @@ let isHost = false;
 let gameListeners = [];
 
 // DOM Elements
-const hostControls = document.getElementById('hostControls');
-const playerSelect = document.getElementById('playerSelect');
+const playerListRow = document.getElementById('playerListRow');
+const adjustPositionRow = document.getElementById('adjustPositionRow');
+const adjustPositionBtn = document.getElementById('adjustPositionBtn');
+const myCardsArea = document.getElementById('myCardsArea');
+const actionButtonsRow = document.getElementById('actionButtonsRow');
 const giveCardBtn = document.getElementById('giveCardBtn');
 const passBtn = document.getElementById('passBtn');
 const restartGameBtn = document.getElementById('restartGameBtn');
 
-// New Table Elements
-const myRoleText = document.getElementById('myRoleText');
-const myPlayerName = document.getElementById('myPlayerName');
-const myTotalSpan = document.getElementById('myTotal');
-const safeIndicator = document.getElementById('safeIndicator');
-const lockSafeBtn = document.getElementById('lockSafeBtn');
-const myTableArea = document.getElementById('myTableArea');
-const myCardsArea = document.getElementById('myCardsArea');
+const turnProfilePic = document.getElementById('turnProfilePic');
+const turnPlayerName = document.getElementById('turnPlayerName');
+const turnPlayerCards = document.getElementById('turnPlayerCards');
 
-// Spy Elements
-const viewingControls = document.getElementById('viewingControls');
-const viewPlayerSelect = document.getElementById('viewPlayerSelect');
-const spyViewingArea = document.getElementById('spyViewingArea');
-const spyPlayerNameTitle = document.getElementById('spyPlayerNameTitle');
-const spyCardsArea = document.getElementById('spyCardsArea');
-const backToMyTableBtn = document.getElementById('backToMyTableBtn');
+const adjustPositionModal = document.getElementById('adjustPositionModal');
+const draggablePlayerList = document.getElementById('draggablePlayerList');
+const saveTurnOrderBtn = document.getElementById('saveTurnOrderBtn');
+const cancelTurnOrderBtn = document.getElementById('cancelTurnOrderBtn');
+const statusRow = document.getElementById('statusRow');
 
-// Deathmatch Table Elements
-const deathmatchTableArea = document.getElementById('deathmatchTableArea');
-const deathmatchTablePlayers = document.getElementById('deathmatchTablePlayers');
+// Deathmatch UI
+const deathmatchTitle = document.getElementById('deathmatchTitle');
+const dmHostControlsRow = document.getElementById('dmHostControlsRow');
+const dealDmCardsBtn = document.getElementById('dealDmCardsBtn');
+const dmBtns = document.querySelectorAll('.dm-btn');
+
+// Loser Animation
+const loserAnimationOverlay = document.getElementById('loserAnimationOverlay');
+const loserAnimProfilePic = document.getElementById('loserAnimProfilePic');
+const loserAnimNameText = document.getElementById('loserAnimNameText');
+const loserAnimReasonSub = document.getElementById('loserAnimReasonSub');
+const closeLoserAnimBtn = document.getElementById('closeLoserAnimBtn');
 
 let lastKnownState = null;
 let lastKnownPlayers = null;
-let viewingPlayerId = null;
-
-if (viewPlayerSelect) {
-    viewPlayerSelect.addEventListener('change', () => {
-        viewingPlayerId = viewPlayerSelect.value;
-        if (viewingPlayerId) {
-            myTableArea.classList.add('hidden');
-            spyViewingArea.classList.remove('hidden');
-            backToMyTableBtn.classList.remove('hidden');
-        } else {
-            myTableArea.classList.remove('hidden');
-            spyViewingArea.classList.add('hidden');
-            backToMyTableBtn.classList.add('hidden');
-        }
-        if (lastKnownState && lastKnownPlayers) renderCards(lastKnownState, lastKnownPlayers);
-    });
-}
-
-if (backToMyTableBtn) {
-    backToMyTableBtn.addEventListener('click', () => {
-        viewPlayerSelect.value = '';
-        viewingPlayerId = null;
-        myTableArea.classList.remove('hidden');
-        spyViewingArea.classList.add('hidden');
-        backToMyTableBtn.classList.add('hidden');
-        if (lastKnownState && lastKnownPlayers) renderCards(lastKnownState, lastKnownPlayers);
-    });
-}
-
-// Deathmatch Elements
-const deathmatchControls = document.getElementById('deathmatchControls');
-const dmBtns = document.querySelectorAll('.dm-btn');
-const revealDeathmatchBtn = document.getElementById('revealDeathmatchBtn');
-const deathmatchRevealArea = document.getElementById('deathmatchRevealArea');
-const myRevealBtn = document.getElementById('myRevealBtn');
-const dmOpponentsText = document.getElementById('dmOpponentsText');
-
-const massiveAlert = document.getElementById('massiveAlert');
-const massiveAlertText = document.getElementById('massiveAlertText');
-const massiveAlertSub = document.getElementById('massiveAlertSub');
-const closeMassiveAlertBtn = document.getElementById('closeMassiveAlertBtn');
+let localTurnOrder = [];
 
 const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
 const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -107,17 +72,21 @@ export async function initGame(roomCode) {
     const playersSnapshot = await get(ref(db, `rooms/${roomCode}/players`));
     const players = playersSnapshot.val() || {};
     
+    const playerIds = Object.keys(players);
+    
     let gameState = {
         deck: deck,
         hands: {},
-        safePlayers: {}, // { playerId: penaltyDistance }
-        dmRevealed: {},
-        status: 'active'
+        revealed: {}, 
+        passed: {},   
+        turnOrder: playerIds,
+        currentTurnIndex: 0,
+        status: 'playing'
     };
 
-    // Deal 2 cards to ALL players
-    Object.keys(players).forEach(id => {
+    playerIds.forEach(id => {
         gameState.hands[id] = [deck.pop(), deck.pop()];
+        gameState.revealed[id] = [false, false];
     });
 
     await set(ref(db, `rooms/${roomCode}/gameState`), gameState);
@@ -129,10 +98,11 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
     isHost = hostStatus;
 
     if (isHost) {
-        hostControls.classList.remove('hidden');
-        myRoleText.innerHTML = `Player: <span id="myPlayerName">Dealer (Host)</span>`;
+        if(adjustPositionRow) adjustPositionRow.classList.remove('hidden');
+        if(restartGameBtn) restartGameBtn.classList.remove('hidden');
     } else {
-        hostControls.classList.add('hidden');
+        if(adjustPositionRow) adjustPositionRow.classList.add('hidden');
+        if(restartGameBtn) restartGameBtn.classList.add('hidden');
     }
 
     const stateRef = ref(db, `rooms/${roomCode}/gameState`);
@@ -145,49 +115,8 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
 
         lastKnownState = state;
         lastKnownPlayers = players;
-        renderCards(state, players);
         
-        if (isHost) {
-            updateHostControls(state, players);
-            checkGameEndCondition(state);
-        }
-
-        // Handle deathmatch
-        if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_reveal') {
-            myTableArea.classList.add('hidden');
-            if (document.getElementById('myStatusArea')) document.getElementById('myStatusArea').classList.add('hidden');
-            viewingControls.classList.add('hidden');
-            spyViewingArea.classList.add('hidden');
-            deathmatchTableArea.classList.remove('hidden');
-            
-            handleDeathmatch(state, players);
-            
-            // Auto-finalize if everyone has revealed
-            if (isHost && state.status === 'deathmatch_reveal' && state.dmHands && state.dmRevealed) {
-                const allRevealed = Object.keys(state.dmHands).every(id => state.dmRevealed[id]);
-                if (allRevealed) {
-                    finalizeDeathmatch(state, state.dmCondition);
-                }
-            }
-        } else {
-            deathmatchRevealArea.classList.add('hidden');
-            deathmatchTableArea.classList.add('hidden');
-            viewingControls.classList.remove('hidden');
-            if (document.getElementById('myStatusArea')) document.getElementById('myStatusArea').classList.remove('hidden');
-            
-            if (viewingPlayerId) {
-                myTableArea.classList.add('hidden');
-                spyViewingArea.classList.remove('hidden');
-            } else {
-                myTableArea.classList.remove('hidden');
-                spyViewingArea.classList.add('hidden');
-            }
-        }
-        
-        // Handle Game Over
-        if (state.status === 'game_over') {
-            showLoser(state.loserName, state.reason);
-        }
+        renderUI(state, players);
     });
     
     gameListeners.push({ ref: stateRef, listener });
@@ -200,16 +129,339 @@ export function leaveGame() {
     gameListeners = [];
     currentRoom = null;
     isHost = false;
-    viewingPlayerId = null;
-    if(viewPlayerSelect) viewPlayerSelect.value = '';
-    hostControls.classList.add('hidden');
-    deathmatchControls.classList.add('hidden');
-    massiveAlert.classList.add('hidden');
-    if(deathmatchRevealArea) deathmatchRevealArea.classList.add('hidden');
-    if(deathmatchTableArea) deathmatchTableArea.classList.add('hidden');
     
-    const endBtn = document.getElementById('endRoundBtn');
-    if (endBtn) endBtn.remove();
+    if(actionButtonsRow) actionButtonsRow.classList.add('hidden');
+    if(adjustPositionRow) adjustPositionRow.classList.add('hidden');
+    if(restartGameBtn) restartGameBtn.classList.add('hidden');
+    if(dmHostControlsRow) dmHostControlsRow.classList.add('hidden');
+    if(deathmatchTitle) deathmatchTitle.classList.add('hidden');
+    if(loserAnimationOverlay) loserAnimationOverlay.classList.add('hidden');
+}
+
+function renderUI(state, players) {
+    if(!playerListRow) return;
+
+    playerListRow.innerHTML = '';
+    
+    if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_playing') {
+        const tiedIds = state.tiedPlayers || [];
+        if (tiedIds.includes(myId) && me) {
+            playerListRow.innerHTML += createPlayerBox('You', me.photoUrl, false);
+        }
+        tiedIds.forEach(id => {
+            if (id !== myId && players[id]) {
+                playerListRow.innerHTML += createPlayerBox(players[id].name, players[id].photoUrl, false);
+            }
+        });
+        if(statusRow) statusRow.classList.add('hidden');
+    } else {
+        if(statusRow) statusRow.classList.remove('hidden');
+        if (me) {
+            playerListRow.innerHTML += createPlayerBox('You', me.photoUrl, state.passed && state.passed[myId]);
+        }
+        
+        if (state.turnOrder) {
+            state.turnOrder.forEach(id => {
+                if (id !== myId && players[id]) {
+                    playerListRow.innerHTML += createPlayerBox(players[id].name, players[id].photoUrl, state.passed && state.passed[id]);
+                }
+            });
+        }
+    }
+
+    const myHand = state.hands[myId] || [];
+    const myRevealed = state.revealed[myId] || [];
+    if(myCardsArea) {
+        myCardsArea.innerHTML = '';
+
+        if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_playing') {
+            if(deathmatchTitle) deathmatchTitle.classList.remove('hidden');
+            
+            if (state.dmHands && state.status === 'deathmatch_playing') {
+                const tiedIds = state.tiedPlayers || [];
+                tiedIds.forEach(id => {
+                    const card = state.dmHands[id];
+                    const isRevealed = state.dmRevealed && state.dmRevealed[id];
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.style.display = 'flex';
+                    wrapper.style.flexDirection = 'column';
+                    wrapper.style.alignItems = 'center';
+                    wrapper.style.gap = '5px';
+                    
+                    const nameLabel = document.createElement('span');
+                    nameLabel.textContent = players[id] ? players[id].name : 'Unknown';
+                    nameLabel.style.fontSize = '0.8rem';
+                    
+                    const cardEl = document.createElement('div');
+                    if (isRevealed) {
+                        const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
+                        let suitSymbol = card.suit === 'hearts' ? '♥' : (card.suit === 'diamonds' ? '♦' : (card.suit === 'clubs' ? '♣' : '♠'));
+                        cardEl.className = `playing-card ${redClass}`;
+                        cardEl.setAttribute('data-value', card.value);
+                        cardEl.setAttribute('data-suit', suitSymbol);
+                    } else {
+                        cardEl.className = `playing-card back`;
+                        if (id === myId) {
+                            cardEl.style.cursor = 'pointer';
+                            cardEl.onclick = async () => {
+                                if (!state.dmRevealed) state.dmRevealed = {};
+                                state.dmRevealed[myId] = true;
+                                await update(ref(db, `rooms/${currentRoom}/gameState/dmRevealed`), state.dmRevealed);
+                            };
+                        }
+                    }
+                    wrapper.appendChild(nameLabel);
+                    wrapper.appendChild(cardEl);
+                    myCardsArea.appendChild(wrapper);
+                });
+            }
+
+            if (isHost && state.status === 'deathmatch_setup') {
+                if(dmHostControlsRow) dmHostControlsRow.classList.remove('hidden');
+            } else {
+                if(dmHostControlsRow) dmHostControlsRow.classList.add('hidden');
+            }
+            if(actionButtonsRow) actionButtonsRow.classList.add('hidden');
+
+            // Auto finalize deathmatch when all revealed
+            if (isHost && state.status === 'deathmatch_playing' && state.dmHands && state.dmRevealed) {
+                const allRevealed = Object.keys(state.dmHands).every(id => state.dmRevealed[id]);
+                if (allRevealed) finalizeDeathmatch(state, state.dmCondition);
+            }
+            
+        } else {
+            if(deathmatchTitle) deathmatchTitle.classList.add('hidden');
+            if(dmHostControlsRow) dmHostControlsRow.classList.add('hidden');
+            
+            myHand.forEach((card, index) => {
+                const isRevealed = myRevealed[index];
+                const cardEl = document.createElement('div');
+                if (isRevealed) {
+                    const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
+                    let suitSymbol = card.suit === 'hearts' ? '♥' : (card.suit === 'diamonds' ? '♦' : (card.suit === 'clubs' ? '♣' : '♠'));
+                    cardEl.className = `playing-card ${redClass}`;
+                    cardEl.setAttribute('data-value', card.value);
+                    cardEl.setAttribute('data-suit', suitSymbol);
+                } else {
+                    cardEl.className = `playing-card back`;
+                }
+                
+                cardEl.onclick = async () => {
+                    if (!isRevealed) {
+                        const newRevealed = [...myRevealed];
+                        newRevealed[index] = true;
+                        await update(ref(db, `rooms/${currentRoom}/gameState/revealed/${myId}`), newRevealed);
+                    }
+                };
+                myCardsArea.appendChild(cardEl);
+            });
+        }
+    }
+
+    if (state.turnOrder && state.turnOrder.length > 0 && state.status === 'playing') {
+        const currentTurnId = state.turnOrder[state.currentTurnIndex];
+        const turnPlayer = players[currentTurnId];
+        
+        if (turnPlayer) {
+            if(turnPlayerName) turnPlayerName.textContent = currentTurnId === myId ? 'Your Turn' : `${turnPlayer.name}'s Turn`;
+            const handLen = state.hands[currentTurnId] ? state.hands[currentTurnId].length : 0;
+            if(turnPlayerCards) turnPlayerCards.textContent = `Cards: ${handLen}`;
+            
+            if(turnProfilePic) {
+                if (turnPlayer.photoUrl) {
+                    turnProfilePic.style.backgroundImage = `url('${turnPlayer.photoUrl}')`;
+                    turnProfilePic.textContent = '';
+                    turnProfilePic.style.backgroundColor = 'transparent';
+                    turnProfilePic.style.backgroundSize = 'cover';
+                    turnProfilePic.style.backgroundPosition = 'center';
+                } else {
+                    turnProfilePic.style.backgroundImage = 'none';
+                    turnProfilePic.textContent = turnPlayer.name.charAt(0);
+                    turnProfilePic.style.backgroundColor = '#444';
+                }
+            }
+
+            if (currentTurnId === myId && (!state.passed || !state.passed[myId])) {
+                if(actionButtonsRow) actionButtonsRow.classList.remove('hidden');
+                if(giveCardBtn) giveCardBtn.disabled = handLen >= 5;
+            } else {
+                if(actionButtonsRow) actionButtonsRow.classList.add('hidden');
+            }
+        }
+    } else {
+        if(actionButtonsRow) actionButtonsRow.classList.add('hidden');
+        if(turnPlayerName) turnPlayerName.textContent = 'Round Over';
+        if(turnPlayerCards) turnPlayerCards.textContent = '';
+    }
+
+    if (state.status === 'game_over' && state.loserName) {
+        showLoser(state.loserName, state.loserPhoto, state.reason);
+    }
+}
+
+function createPlayerBox(name, photoUrl, isPassed) {
+    const opacity = isPassed ? '0.5' : '1';
+    const bgStyle = photoUrl ? `background-image: url('${photoUrl}'); background-size: cover; background-position: center;` : '';
+    const initial = !photoUrl ? name.charAt(0) : '';
+    return `
+        <div class="player-box" style="opacity: ${opacity}">
+            <div class="profile-pic" style="${bgStyle}">${initial}</div>
+            <div class="player-name">${name}</div>
+        </div>
+    `;
+}
+
+function renderAdjustPositionModal() {
+    if(!draggablePlayerList) return;
+    draggablePlayerList.innerHTML = '';
+    localTurnOrder.forEach((id, index) => {
+        if (!lastKnownPlayers[id]) return;
+        const li = document.createElement('li');
+        li.className = 'draggable-item';
+        li.dataset.id = id;
+        li.innerHTML = `
+            <span>${lastKnownPlayers[id].name}</span>
+            <div>
+                <button class="btn sm secondary move-up" data-idx="${index}">↑</button>
+                <button class="btn sm secondary move-down" data-idx="${index}">↓</button>
+            </div>
+        `;
+        draggablePlayerList.appendChild(li);
+    });
+
+    draggablePlayerList.querySelectorAll('.move-up').forEach(btn => {
+        btn.onclick = (e) => {
+            const idx = parseInt(e.target.dataset.idx);
+            if (idx > 0) {
+                const temp = localTurnOrder[idx];
+                localTurnOrder[idx] = localTurnOrder[idx - 1];
+                localTurnOrder[idx - 1] = temp;
+                renderAdjustPositionModal();
+            }
+        };
+    });
+    
+    draggablePlayerList.querySelectorAll('.move-down').forEach(btn => {
+        btn.onclick = (e) => {
+            const idx = parseInt(e.target.dataset.idx);
+            if (idx < localTurnOrder.length - 1) {
+                const temp = localTurnOrder[idx];
+                localTurnOrder[idx] = localTurnOrder[idx + 1];
+                localTurnOrder[idx + 1] = temp;
+                renderAdjustPositionModal();
+            }
+        };
+    });
+}
+
+if (adjustPositionBtn) {
+    adjustPositionBtn.onclick = () => {
+        if (!isHost || !lastKnownState || !lastKnownPlayers) return;
+        localTurnOrder = [...lastKnownState.turnOrder];
+        renderAdjustPositionModal();
+        if(adjustPositionModal) adjustPositionModal.classList.remove('hidden');
+    };
+}
+
+if (cancelTurnOrderBtn) {
+    cancelTurnOrderBtn.onclick = () => {
+        if(adjustPositionModal) adjustPositionModal.classList.add('hidden');
+    };
+}
+
+if (saveTurnOrderBtn) {
+    saveTurnOrderBtn.onclick = async () => {
+        if (!isHost || !currentRoom) return;
+        
+        let currentIdx = lastKnownState.currentTurnIndex;
+        if (currentIdx >= localTurnOrder.length) currentIdx = 0;
+        
+        await update(ref(db, `rooms/${currentRoom}/gameState`), {
+            turnOrder: localTurnOrder,
+            currentTurnIndex: currentIdx
+        });
+        
+        if(adjustPositionModal) adjustPositionModal.classList.add('hidden');
+    };
+}
+
+async function advanceTurn(state) {
+    let nextIdx = state.currentTurnIndex;
+    let found = false;
+    
+    for (let i = 0; i < state.turnOrder.length; i++) {
+        nextIdx = (nextIdx + 1) % state.turnOrder.length;
+        const pId = state.turnOrder[nextIdx];
+        if (!state.passed || !state.passed[pId]) {
+            found = true;
+            break;
+        }
+    }
+    
+    if (found) {
+        await update(ref(db, `rooms/${currentRoom}/gameState/currentTurnIndex`), nextIdx);
+    } else {
+        // Round is over. Calculate who lost.
+        calculateLoser(state);
+    }
+}
+
+async function calculateLoser(state) {
+    if (!isHost) return;
+    const playersSnapshot = await get(ref(db, `rooms/${currentRoom}/players`));
+    const players = playersSnapshot.val() || {};
+
+    let maxDistance = -1;
+    let tiedPlayers = [];
+
+    const activePlayers = state.turnOrder || [];
+    activePlayers.forEach(id => {
+        const hand = state.hands[id] || [];
+        const total = calculateTotal(hand);
+        
+        let distance = 0;
+        if (total > 21) {
+            distance = total - 21; // Busted
+        } else if (total < 16) {
+            distance = 16 - total; // Penalty for being too low
+        }
+        
+        if (distance > maxDistance) {
+            maxDistance = distance;
+            tiedPlayers = [id];
+        } else if (distance === maxDistance) {
+            tiedPlayers.push(id);
+        }
+    });
+
+    if (maxDistance === 0) {
+        // Everyone was safe (16-21). Penalize the lowest score.
+        let lowestTotal = 999;
+        activePlayers.forEach(id => {
+            const total = calculateTotal(state.hands[id] || []);
+            if (total < lowestTotal) {
+                lowestTotal = total;
+                tiedPlayers = [id];
+            } else if (total === lowestTotal) {
+                tiedPlayers.push(id);
+            }
+        });
+    }
+
+    if (tiedPlayers.length === 1) {
+        const loser = players[tiedPlayers[0]];
+        const reason = maxDistance > 0 ? "Busted or missed safe zone." : "Lowest safe score.";
+        await update(ref(db, `rooms/${currentRoom}/gameState`), {
+            status: 'game_over',
+            loserName: loser.name,
+            loserPhoto: loser.photoUrl || '',
+            reason: reason
+        });
+        showLoser(loser.name, loser.photoUrl, reason);
+    } else if (tiedPlayers.length > 1) {
+        initDeathmatch(state, tiedPlayers);
+    }
 }
 
 function calculateTotal(hand) {
@@ -231,326 +483,34 @@ function calculateTotal(hand) {
     return total;
 }
 
-function renderCards(state, players) {
-    if(!myCardsArea) return;
-    
-    // 1. My Table
-    const myHand = state.hands[myId] || [];
-    const myTotal = calculateTotal(myHand);
-    if(myTotalSpan) myTotalSpan.textContent = myTotal;
-    
-    if (state.safePlayers && state.safePlayers[myId] !== undefined) {
-        if(safeIndicator) safeIndicator.classList.remove('hidden');
-        if(lockSafeBtn) {
-            lockSafeBtn.disabled = true;
-            lockSafeBtn.textContent = "Locked (SAFE)";
-        }
-    } else {
-        if(safeIndicator) safeIndicator.classList.add('hidden');
-        if(lockSafeBtn) {
-            lockSafeBtn.disabled = false;
-            lockSafeBtn.textContent = "Lock In (SAFE)";
-        }
-    }
-
-    myCardsArea.innerHTML = '';
-    myHand.forEach(card => {
-        let suitSymbol = '';
-        switch(card.suit) {
-            case 'hearts': suitSymbol = '♥'; break;
-            case 'diamonds': suitSymbol = '♦'; break;
-            case 'clubs': suitSymbol = '♣'; break;
-            case 'spades': suitSymbol = '♠'; break;
-        }
-        const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
-        myCardsArea.innerHTML += `<div class="playing-card ${redClass}">${card.value}<br/>${suitSymbol}</div>`;
-    });
-
-    // 2. Update Spy Dropdown options
-    const currentVal = viewPlayerSelect.value;
-    viewPlayerSelect.innerHTML = '<option value="">Select a player to view...</option>';
-    Object.keys(players).forEach(id => {
-        if (id === myId) return;
-        const option = document.createElement('option');
-        option.value = id;
-        option.textContent = players[id].name;
-        viewPlayerSelect.appendChild(option);
-    });
-    if (currentVal) viewPlayerSelect.value = currentVal;
-    
-    // 3. Render Spy Cards
-    if (viewingPlayerId && players[viewingPlayerId]) {
-        spyPlayerNameTitle.textContent = `Spying on: ${players[viewingPlayerId].name}`;
-        spyCardsArea.innerHTML = '';
-        const spyHand = state.hands[viewingPlayerId] || [];
-        spyHand.forEach(card => {
-            let suitSymbol = '';
-            switch(card.suit) {
-                case 'hearts': suitSymbol = '♥'; break;
-                case 'diamonds': suitSymbol = '♦'; break;
-                case 'clubs': suitSymbol = '♣'; break;
-                case 'spades': suitSymbol = '♠'; break;
-            }
-            const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
-            spyCardsArea.innerHTML += `<div class="playing-card ${redClass}">${card.value}<br/>${suitSymbol}</div>`;
-        });
-    }
-
-    // 4. Render Deathmatch Cards
-    if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_reveal') {
-        if (!deathmatchTablePlayers) return;
-        deathmatchTablePlayers.innerHTML = '';
-        state.tiedPlayers.forEach(id => {
-            if (!players[id]) return;
-            const cardContainer = document.createElement('div');
-            cardContainer.className = 'table-player-card';
-            let header = `<div class="table-player-header"><strong>${players[id].name} ${id === myId ? '(You)' : ''}</strong></div>`;
-            let cardsHtml = '<div class="cards-container">';
-            
-            if (state.dmHands && state.dmHands[id]) {
-                if (state.dmRevealed && state.dmRevealed[id]) {
-                    const c = state.dmHands[id];
-                    const redClass = ['hearts', 'diamonds'].includes(c.suit) ? 'red' : '';
-                    let sym = c.suit === 'hearts' ? '♥' : (c.suit === 'diamonds' ? '♦' : (c.suit === 'clubs' ? '♣' : '♠'));
-                    cardsHtml += `<div class="playing-card sm-card dm-card ${redClass}">${c.value}<br/>${sym}</div>`;
-                } else {
-                    cardsHtml += `<div class="playing-card sm-card dm-card back">?</div>`;
-                }
-            } else {
-                cardsHtml += `<span class="mt-10 mb-10 text-muted">Waiting for deal...</span>`;
-            }
-            
-            cardsHtml += '</div>';
-            cardContainer.innerHTML = header + cardsHtml;
-            deathmatchTablePlayers.appendChild(cardContainer);
-        });
-    }
-}
-
-// SAFE Button Click
-if (lockSafeBtn) {
-    lockSafeBtn.addEventListener('click', async () => {
-        if (!currentRoom) return;
-        const stateRef = ref(db, `rooms/${currentRoom}/gameState`);
-        const snapshot = await get(stateRef);
-        let state = snapshot.val();
-        
-        if (state.safePlayers && state.safePlayers[myId] !== undefined) return;
-        
-        const myHand = state.hands[myId] || [];
-        const total = calculateTotal(myHand);
-        
-        // If under 16, they take a massive penalty
-        const isIllegal = total < 16;
-        const distancePenalty = isIllegal ? (100 + (16 - total)) : 0;
-        
-        if (!state.safePlayers) state.safePlayers = {};
-        state.safePlayers[myId] = distancePenalty;
-        
-        await update(stateRef, { safePlayers: state.safePlayers });
-    });
-}
-
-// --- Host Functions ---
-
-function updateHostControls(state, players) {
-    const currentVal = playerSelect.value;
-    playerSelect.innerHTML = '<option value="">Select a player...</option>';
-    
-    // Round robin logic: find minimum card count among non-safe active players
-    let activeCardCounts = [];
-    Object.keys(players).forEach(id => {
-        if (!state.safePlayers || state.safePlayers[id] === undefined) {
-            activeCardCounts.push((state.hands[id] || []).length);
-        }
-    });
-    const minActiveCards = activeCardCounts.length > 0 ? Math.min(...activeCardCounts) : 5;
-
-    Object.keys(players).forEach(id => {
-        const handLen = state.hands[id] ? state.hands[id].length : 0;
-        const isSafePlayer = state.safePlayers && state.safePlayers[id] !== undefined;
-        
-        const option = document.createElement('option');
-        option.value = id;
-        option.textContent = `${players[id].name}`;
-        
-        // Disable if safe, max cards (5), or ahead of round robin
-        if (isSafePlayer) {
-            option.disabled = true;
-            option.textContent += ' [SAFE]';
-        } else if (handLen >= 5) {
-            option.disabled = true;
-            option.textContent += ' [MAX CARDS]';
-        } else if (handLen > minActiveCards) {
-            option.disabled = true;
-            option.textContent += ' [WAITING ON OTHERS]';
-        }
-        
-        playerSelect.appendChild(option);
-    });
-
-    if (currentVal) playerSelect.value = currentVal;
-}
-
-if (giveCardBtn) {
-    giveCardBtn.addEventListener('click', async () => {
-        if (!isHost || !currentRoom) return;
-        const targetId = playerSelect.value;
-        if (!targetId) {
-            showAlert('Error', 'Select a valid player first.');
-            return;
-        }
-
-        const roomRef = ref(db, `rooms/${currentRoom}`);
-        const snapshot = await get(roomRef);
-        const roomData = snapshot.val();
-        let state = roomData.gameState;
-        let players = roomData.players;
-        
-        if (!state || state.deck.length === 0) {
-            showAlert('Error', 'Deck is empty!');
-            return;
-        }
-
-        const handLen = state.hands[targetId] ? state.hands[targetId].length : 0;
-        
-        // Strict Validation
-        let activeCardCounts = [];
-        Object.keys(players).forEach(id => {
-            if (!state.safePlayers || state.safePlayers[id] === undefined) {
-                activeCardCounts.push((state.hands[id] || []).length);
-            }
-        });
-        const minActiveCards = activeCardCounts.length > 0 ? Math.min(...activeCardCounts) : 5;
-        
-        if (state.safePlayers && state.safePlayers[targetId] !== undefined) {
-            showAlert('Error', 'Player is already SAFE!');
-            return;
-        }
-        if (handLen >= 5) {
-            showAlert('Error', 'Player has MAX cards!');
-            return;
-        }
-        if (handLen > minActiveCards) {
-            showAlert('Error', 'Wait for other players to receive their cards first!');
-            return;
-        }
-
-        const card = state.deck.pop();
-        if (!state.hands[targetId]) state.hands[targetId] = [];
-        state.hands[targetId].push(card);
-
-        await update(ref(db, `rooms/${currentRoom}/gameState`), {
-            deck: state.deck,
-            [`hands/${targetId}`]: state.hands[targetId]
-        });
-    });
-}
-
-if (restartGameBtn) {
-    restartGameBtn.addEventListener('click', async () => {
-        if (!isHost || !currentRoom) return;
-        
-        const roomRef = ref(db, `rooms/${currentRoom}`);
-        await update(roomRef, {
-            status: 'waiting',
-            gameState: null
-        });
-    });
-}
-
-function checkGameEndCondition(state) {
-    if (!document.getElementById('endRoundBtn')) {
-        const btn = document.createElement('button');
-        btn.id = 'endRoundBtn';
-        btn.className = 'btn danger mt-10 full-width';
-        btn.textContent = 'End Round & Find Loser';
-        btn.onclick = () => calculateLoser();
-        hostControls.querySelector('.host-panel').appendChild(btn);
-    }
-}
-
-async function calculateLoser() {
-    if (!isHost) return;
-    const snapshot = await get(ref(db, `rooms/${currentRoom}/gameState`));
-    const state = snapshot.val();
-    const playersSnapshot = await get(ref(db, `rooms/${currentRoom}/players`));
-    const players = playersSnapshot.val();
-
-    let maxDistance = -1;
-    let tiedPlayers = [];
-
-    Object.keys(players).forEach(id => {
-        const hand = state.hands[id] || [];
-        const total = calculateTotal(hand);
-        
-        let distance = 0;
-        
-        // Check illegal safe penalty first
-        if (state.safePlayers && state.safePlayers[id] > 0) {
-            distance = state.safePlayers[id];
-        } else if (total > 21) {
-            distance = total - 21;
-        } else if (total < 16) {
-            distance = 16 - total;
-        }
-        
-        if (distance > maxDistance) {
-            maxDistance = distance;
-            tiedPlayers = [id];
-        } else if (distance === maxDistance) {
-            tiedPlayers.push(id);
-        }
-    });
-
-    if (maxDistance === 0) {
-        // Everyone perfectly safe (16-21). Penalize the absolute lowest total.
-        let lowestTotal = 999;
-        Object.keys(players).forEach(id => {
-            const total = calculateTotal(state.hands[id] || []);
-            if (total < lowestTotal) {
-                lowestTotal = total;
-                tiedPlayers = [id];
-            } else if (total === lowestTotal) {
-                tiedPlayers.push(id);
-            }
-        });
-    }
-
-    if (tiedPlayers.length === 1) {
-        const loserName = players[tiedPlayers[0]].name;
-        await update(ref(db, `rooms/${currentRoom}/gameState`), {
-            status: 'game_over',
-            loserName: loserName,
-            reason: maxDistance > 0 ? `Farthest from safe zone` : `Lowest safe score`
-        });
-    } else if (tiedPlayers.length > 1) {
-        initDeathmatch(state, tiedPlayers);
-    }
-}
-
 async function initDeathmatch(state, tiedPlayers) {
-    showAlert('TIE BREAKER', 'Multiple players tied. Host is selecting condition.');
-
+    if (!isHost) return;
     await update(ref(db, `rooms/${currentRoom}/gameState`), {
         status: 'deathmatch_setup',
         tiedPlayers: tiedPlayers
     });
+}
 
-    deathmatchControls.classList.remove('hidden');
-    
-    let selectedCondition = null;
+// Host Deathmatch Controls
+let selectedDmCondition = null;
+if (dmBtns) {
     dmBtns.forEach(btn => {
         btn.onclick = () => {
-            dmBtns.forEach(b => b.style.opacity = '0.5');
-            btn.style.opacity = '1';
-            selectedCondition = btn.dataset.cond;
-            revealDeathmatchBtn.classList.remove('hidden');
+            dmBtns.forEach(b => {
+                b.classList.remove('primary');
+                b.classList.add('secondary');
+            });
+            btn.classList.remove('secondary');
+            btn.classList.add('primary');
+            selectedDmCondition = btn.dataset.cond;
+            if(dealDmCardsBtn) dealDmCardsBtn.classList.remove('hidden');
         };
     });
+}
 
-    revealDeathmatchBtn.onclick = async () => {
-        if (!selectedCondition) return;
+if (dealDmCardsBtn) {
+    dealDmCardsBtn.onclick = async () => {
+        if (!selectedDmCondition || !isHost || !currentRoom) return;
         
         const s = (await get(ref(db, `rooms/${currentRoom}/gameState`))).val();
         let dmHands = {};
@@ -559,41 +519,24 @@ async function initDeathmatch(state, tiedPlayers) {
         });
 
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
-            status: 'deathmatch_reveal',
+            status: 'deathmatch_playing',
             dmHands: dmHands,
             dmRevealed: {},
             deck: s.deck,
-            dmCondition: selectedCondition
+            dmCondition: selectedDmCondition
         });
-        
-        deathmatchControls.classList.add('hidden');
     };
 }
 
-function handleDeathmatch(state, players) {
-    if (state.dmHands && state.dmHands[myId] && (!state.dmRevealed || !state.dmRevealed[myId])) {
-        deathmatchRevealArea.classList.remove('hidden');
-        const opponents = Object.keys(state.dmHands).map(id => players[id].name).join(' vs ');
-        dmOpponentsText.textContent = `Tie-Breaker: ${opponents}`;
-        
-        myRevealBtn.onclick = async () => {
-            deathmatchRevealArea.classList.add('hidden');
-            if (!state.dmRevealed) state.dmRevealed = {};
-            state.dmRevealed[myId] = true;
-            await update(ref(db, `rooms/${currentRoom}/gameState/dmRevealed`), state.dmRevealed);
-        };
-    } else {
-        deathmatchRevealArea.classList.add('hidden');
-    }
-}
-
 async function finalizeDeathmatch(state, condition) {
+    if (!isHost) return;
     const playersSnapshot = await get(ref(db, `rooms/${currentRoom}/players`));
     const players = playersSnapshot.val();
 
     let dmPlayers = Object.keys(state.dmHands).map(id => ({
         id,
         name: players[id].name,
+        photoUrl: players[id].photoUrl,
         card: state.dmHands[id]
     }));
 
@@ -620,33 +563,98 @@ async function finalizeDeathmatch(state, condition) {
     }
 
     if (tiedLosers.length > 1) {
-        // Tie in deathmatch! Restart deathmatch for tied losers
-        showAlert('DEATHMATCH TIE!', 'Players drew the same card value. Entering Round 2!');
+        // Still tied! Re-run deathmatch setup
+        showAlert('TIE AGAIN!', 'Players drew the same value. Dealing again!');
         initDeathmatch(state, tiedLosers.map(p => p.id));
     } else {
         const loser = tiedLosers[0];
+        const reason = `Lost Deathmatch (${condition}) with: ${loser.card.value}`;
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
             status: 'game_over',
             loserName: loser.name,
-            reason: `Lost Deathmatch (${condition}) with card: ${loser.card.value}`
+            loserPhoto: loser.photoUrl || '',
+            reason: reason
         });
     }
 }
 
-function showLoser(name, reason) {
-    massiveAlertText.textContent = `${name.toUpperCase()} LOST`;
-    massiveAlertSub.textContent = reason;
-    massiveAlert.classList.remove('hidden');
+function showLoser(name, photoUrl, reason) {
+    if (!loserAnimationOverlay) return;
+    loserAnimNameText.textContent = name;
+    loserAnimReasonSub.textContent = reason;
+    
+    if (photoUrl) {
+        loserAnimProfilePic.style.backgroundImage = `url('${photoUrl}')`;
+        loserAnimProfilePic.textContent = '';
+        loserAnimProfilePic.style.backgroundSize = 'cover';
+        loserAnimProfilePic.style.backgroundPosition = 'center';
+    } else {
+        loserAnimProfilePic.style.backgroundImage = 'none';
+        loserAnimProfilePic.textContent = name.charAt(0);
+    }
+    
+    loserAnimationOverlay.classList.remove('hidden');
 }
 
-if (closeMassiveAlertBtn) {
-    closeMassiveAlertBtn.onclick = async () => {
-        massiveAlert.classList.add('hidden');
+if (closeLoserAnimBtn) {
+    closeLoserAnimBtn.onclick = async () => {
+        loserAnimationOverlay.classList.add('hidden');
         if (isHost && currentRoom) {
             await update(ref(db, `rooms/${currentRoom}`), {
                 status: 'waiting',
-                gameState: null 
+                gameState: null
             });
         }
+    };
+}
+
+if (passBtn) {
+    passBtn.onclick = async () => {
+        if (!lastKnownState || lastKnownState.turnOrder[lastKnownState.currentTurnIndex] !== myId) return;
+        
+        const passed = lastKnownState.passed || {};
+        passed[myId] = true;
+        
+        await update(ref(db, `rooms/${currentRoom}/gameState/passed`), passed);
+        await advanceTurn({ ...lastKnownState, passed });
+    };
+}
+
+if (giveCardBtn) {
+    giveCardBtn.onclick = async () => {
+        if (!lastKnownState || lastKnownState.turnOrder[lastKnownState.currentTurnIndex] !== myId) return;
+        
+        let hand = lastKnownState.hands[myId] || [];
+        if (hand.length >= 5) {
+            showAlert('Limit Reached', 'You cannot draw more than 5 cards.');
+            return;
+        }
+        
+        let deck = lastKnownState.deck || [];
+        if (deck.length === 0) return;
+        
+        const newCard = deck.pop();
+        hand.push(newCard);
+        
+        const revealed = lastKnownState.revealed[myId] || [];
+        revealed.push(false);
+        
+        await update(ref(db, `rooms/${currentRoom}/gameState`), {
+            deck: deck,
+            [`hands/${myId}`]: hand,
+            [`revealed/${myId}`]: revealed
+        });
+        
+        await advanceTurn(lastKnownState);
+    };
+}
+
+if (restartGameBtn) {
+    restartGameBtn.onclick = async () => {
+        if (!isHost || !currentRoom) return;
+        await update(ref(db, `rooms/${currentRoom}`), {
+            status: 'waiting',
+            gameState: null
+        });
     };
 }
