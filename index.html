@@ -42,6 +42,7 @@
         </header>
         <div class="game-list">
             <div class="game-card" id="cardGamesBtn">
+                <button class="details-btn" data-game="21" aria-label="Game Rules">ℹ️</button>
                 <div class="card-content">
                     <h3 style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
@@ -57,6 +58,7 @@
                 </div>
             </div>
             <div class="game-card" id="avalonBtn">
+                <button class="details-btn" data-game="avalon" aria-label="Game Rules">ℹ️</button>
                 <div class="card-content">
                     <h3 style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
@@ -69,6 +71,7 @@
                 </div>
             </div>
             <div class="game-card" id="spinWheelBtn">
+                <button class="details-btn" data-game="wheel" aria-label="Game Rules">ℹ️</button>
                 <div class="card-content">
                     <h3 style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
@@ -107,7 +110,7 @@
                 <h4>Players Connected (<span id="playerCount">0</span>)</h4>
                 <ul id="connectedPlayers"></ul>
             </div>
-            <button id="startGameBtn" class="btn primary hidden">Start Game (Host Only)</button>
+            <button id="startGameBtn" class="btn primary hidden">Start Game</button>
         </div>
     </div>
 

@@ -166,6 +166,20 @@ spinWheelBtn.addEventListener('click', () => {
     switchView('lobby');
 });
 
+const gameRules = {
+    '21': '21 Card Game Rules:\n\nPlayers take turns drawing cards from the deck. The goal is to survive without busting by strategically locking your points when you feel safe.',
+    'avalon': 'Avalon Rules:\n\nThis is a game of hidden loyalty. Good fights for the kingdom, while Evil lurks in the shadows. Deduce who the spies are before they sabotage 3 missions.',
+    'wheel': 'Spin The Wheel Rules:\n\nTest your luck! Every round, the wheel spins and eliminates a player until only one survives. The ultimate game of chance.'
+};
+
+document.querySelectorAll('.details-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const game = btn.getAttribute('data-game');
+        showAlert('How to Play', gameRules[game]);
+    });
+});
+
 // ---- Lobby Logic ----
 
 // Generate a unique 4-digit room code not already in use
