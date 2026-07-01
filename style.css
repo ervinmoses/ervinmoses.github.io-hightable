@@ -309,16 +309,18 @@ select {
     position: relative;
     overflow: hidden;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    text-align: center;
+    text-align: left;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
 }
 
 .details-btn {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 30px;
-    height: 30px;
+    flex-shrink: 0;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
     background: rgba(20, 20, 20, 0.8);
     border: 1px solid var(--accent-color);
@@ -326,7 +328,7 @@ select {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     z-index: 10;
     transition: all 0.3s ease;
@@ -588,6 +590,8 @@ select {
 .modal-content {
     width: 90%;
     max-width: 350px;
+    max-height: 80vh;
+    overflow-y: auto;
     text-align: center;
 }
 
