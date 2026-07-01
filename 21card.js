@@ -142,6 +142,7 @@ function renderUI(state, players) {
     if(!playerListRow) return;
 
     playerListRow.innerHTML = '';
+    const me = players[myId];
     
     if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_playing') {
         const tiedIds = state.tiedPlayers || [];
