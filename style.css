@@ -998,8 +998,8 @@ select {
 
 /* Card Back Style */
 .playing-card.back {
-    background: repeating-linear-gradient(25deg, #fff, #fff 4px, #f0f0f0 4px, #f0f0f0 8px);
-    border: 1px solid #ccc;
+    background: repeating-linear-gradient(-25deg, #fff, #fff 4px, #000 4px, #000 8px);
+    border: 1px solid #fff;
     color: transparent;
 }
 .playing-card.back::before, .playing-card.back::after {
