@@ -75,7 +75,7 @@ function switchView(viewId) {
 // ---- Modals ----
 export function showAlert(title, message) {
     modalTitle.textContent = title;
-    modalBody.textContent = message;
+    modalBody.innerHTML = message;
     customModal.classList.remove('hidden');
 }
 
@@ -167,9 +167,38 @@ spinWheelBtn.addEventListener('click', () => {
 });
 
 const gameRules = {
-    '21': '21 Card Game Rules:\n\nPlayers take turns drawing cards from the deck. The goal is to survive without busting by strategically locking your points when you feel safe.',
-    'avalon': 'Avalon Rules:\n\nThis is a game of hidden loyalty. Good fights for the kingdom, while Evil lurks in the shadows. Deduce who the spies are before they sabotage 3 missions.',
-    'wheel': 'Spin The Wheel Rules:\n\nTest your luck! Every round, the wheel spins and eliminates a player until only one survives. The ultimate game of chance.'
+    '21': `
+<div style="text-align: left;">
+    <p><strong>Goal:</strong> Survive without busting over 21.</p>
+    <ul style="padding-left: 20px; list-style-type: disc; line-height: 1.4; margin-top: 10px;">
+        <li style="margin-bottom: 8px;">The <strong>Safe Zone</strong> is between <strong>16 and 21</strong>. Lock your points in this range to survive.</li>
+        <li style="margin-bottom: 8px;"><strong>Ace</strong> acts as <strong>11 points</strong> if you have exactly 2 cards in total. If you have more than 2 cards, Ace counts as <strong>1 point</strong>.</li>
+        <li style="margin-bottom: 8px;">Number cards (2-10) are worth their face value.</li>
+        <li style="margin-bottom: 8px;">Face cards (J, Q, K) are worth 10 points.</li>
+        <li style="margin-bottom: 8px;">If you go over 21, you bust and are eliminated.</li>
+    </ul>
+</div>`,
+    'avalon': `
+<div style="text-align: left;">
+    <p><strong>Goal:</strong> Good wins if they complete 3 Quests. Evil wins if they fail 3 Quests or assassinate Merlin.</p>
+    <ul style="padding-left: 20px; list-style-type: disc; line-height: 1.4; margin-top: 10px;">
+        <li style="margin-bottom: 8px;"><strong>Merlin (Good):</strong> Knows who the Evil players are, but must stay hidden.</li>
+        <li style="margin-bottom: 8px;"><strong>Percival (Good):</strong> Knows who Merlin is, and must protect him.</li>
+        <li style="margin-bottom: 8px;"><strong>Loyal Servants (Good):</strong> Must deduce who Evil is and vote them out of Quests.</li>
+        <li style="margin-bottom: 8px;"><strong>Assassin (Evil):</strong> If Evil loses the Quests, the Assassin can steal the win by guessing who Merlin is.</li>
+        <li style="margin-bottom: 8px;"><strong>Minions of Mordred (Evil):</strong> Must pretend to be Good and secretly fail the Quests.</li>
+    </ul>
+</div>`,
+    'wheel': `
+<div style="text-align: left;">
+    <p><strong>Goal:</strong> Be the last player standing.</p>
+    <ul style="padding-left: 20px; list-style-type: disc; line-height: 1.4; margin-top: 10px;">
+        <li style="margin-bottom: 8px;">Each round, all active players' names are placed on the wheel.</li>
+        <li style="margin-bottom: 8px;">The Host spins the wheel.</li>
+        <li style="margin-bottom: 8px;">Whichever player the wheel lands on is eliminated from the game.</li>
+        <li style="margin-bottom: 8px;">The game continues spinning round by round until only one player survives.</li>
+    </ul>
+</div>`
 };
 
 document.querySelectorAll('.details-btn').forEach(btn => {
