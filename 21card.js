@@ -144,7 +144,7 @@ function renderUI(state, players) {
     playerListRow.innerHTML = '';
     const me = players[myId];
     
-    if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_playing') {
+    if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_playing' || state.status === 'deathmatch_revealed') {
         const tiedIds = state.tiedPlayers || [];
         if (tiedIds.includes(myId) && me) {
             playerListRow.innerHTML += createPlayerBox('You', me.photoUrl, false);
@@ -175,10 +175,10 @@ function renderUI(state, players) {
     if(myCardsArea) {
         myCardsArea.innerHTML = '';
 
-        if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_playing') {
+        if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_playing' || state.status === 'deathmatch_revealed') {
             if(deathmatchTitle) deathmatchTitle.classList.remove('hidden');
             
-            if (state.dmHands && state.status === 'deathmatch_playing') {
+            if (state.dmHands && (state.status === 'deathmatch_playing' || state.status === 'deathmatch_revealed')) {
                 const tiedIds = state.tiedPlayers || [];
                 tiedIds.forEach(id => {
                     const card = state.dmHands[id];
@@ -455,13 +455,19 @@ async function calculateLoser(state) {
     if (tiedPlayers.length === 1) {
         const loser = players[tiedPlayers[0]];
         const reason = maxDistance > 0 ? "Busted or missed safe zone." : "Lowest safe score.";
+        
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
-            status: 'game_over',
-            loserName: loser.name,
-            loserPhoto: loser.photoUrl || '',
-            reason: reason
+            status: 'revealing_loser'
         });
-        showLoser(loser.name, loser.photoUrl, reason);
+
+        setTimeout(async () => {
+            await update(ref(db, `rooms/${currentRoom}/gameState`), {
+                status: 'game_over',
+                loserName: loser.name,
+                loserPhoto: loser.photoUrl || '',
+                reason: reason
+            });
+        }, 2000);
     } else if (tiedPlayers.length > 1) {
         initDeathmatch(state, tiedPlayers);
     }
@@ -572,12 +578,19 @@ async function finalizeDeathmatch(state, condition) {
     } else {
         const loser = tiedLosers[0];
         const reason = `Lost Deathmatch (${condition}) with: ${loser.card.value}`;
+        
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
-            status: 'game_over',
-            loserName: loser.name,
-            loserPhoto: loser.photoUrl || '',
-            reason: reason
+            status: 'deathmatch_revealed'
         });
+
+        setTimeout(async () => {
+            await update(ref(db, `rooms/${currentRoom}/gameState`), {
+                status: 'game_over',
+                loserName: loser.name,
+                loserPhoto: loser.photoUrl || '',
+                reason: reason
+            });
+        }, 2000);
     }
 }
 

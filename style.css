@@ -537,6 +537,17 @@ select {
 }
 .playing-card.hidden-card::before, .playing-card.hidden-card::after { display: none; }
 
+.playing-card.stacked-deck {
+    box-shadow: 2px -2px 0px #fff, 2px -2px 0px 1px #555, 4px -4px 0px #fff, 4px -4px 0px 1px #555, 6px -6px 0px #fff, 6px -6px 0px 1px #555, 8px -8px 0px #fff, 8px -8px 0px 1px #555, 0 4px 10px rgba(0,0,0,0.7);
+    margin-right: 8px;
+    margin-top: 8px;
+}
+.playing-card.stacked-deck.back {
+    background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 10px, #000 10px, #000 20px);
+    color: transparent;
+    border: 1px solid #333;
+}
+
 @keyframes slideIn {
     from { opacity: 0; transform: translateY(-50px) scale(0.8); }
     to { opacity: 1; transform: translateY(0) scale(1); }
