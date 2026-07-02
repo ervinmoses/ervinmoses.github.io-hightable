@@ -1057,6 +1057,133 @@ select {
     background: rgba(255, 255, 255, 0.2);
 }
 
+/* --- Avalon UI Enhancements --- */
+.avalon-quest-track {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 0 10px;
+}
+.avalon-quest-track::before {
+    content: '';
+    position: absolute;
+    top: 18px; /* middle of 36px circles */
+    left: 20px;
+    right: 20px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    z-index: 0;
+}
+.avalon-quest-node {
+    z-index: 1;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+.avalon-quest-node.active {
+    box-shadow: 0 0 15px gold, 0 0 5px gold inset;
+    animation: pulseGold 2s infinite;
+}
+@keyframes pulseGold {
+    0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 215, 0, 1); }
+    100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+}
+.avalon-flip-container {
+    perspective: 1000px;
+    width: 200px;
+    height: 280px;
+    margin: 20px auto;
+    cursor: pointer;
+}
+.avalon-flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+    transform-style: preserve-3d;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+    border-radius: 14px;
+}
+.avalon-flip-container.flipped .avalon-flip-inner {
+    transform: rotateY(180deg);
+}
+.avalon-flip-front, .avalon-flip-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 14px;
+    overflow: hidden;
+}
+.avalon-flip-front {
+    background: linear-gradient(135deg,#2a2a4a,#1a1a2e);
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #888;
+    font-size: 5rem;
+    font-weight: bold;
+}
+.avalon-flip-back {
+    transform: rotateY(180deg);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+}
+
+.avalon-badge {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 12px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    position: relative;
+}
+.avalon-badge:not(.disabled):hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.5);
+}
+.avalon-badge.selected {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: gold;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    transform: scale(1.05);
+}
+.avalon-badge.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.avalon-night-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at center, rgba(10,10,30,0.85) 0%, rgba(0,0,10,0.98) 100%);
+    pointer-events: none;
+    z-index: -1;
+    animation: nightBreathe 4s infinite alternate;
+}
+@keyframes nightBreathe {
+    0% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+.vote-card-3d {
+    transition: all 0.3s ease;
+    transform: perspective(500px) rotateX(10deg);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+.vote-card-3d:hover {
+    transform: perspective(500px) rotateX(0deg) scale(1.05);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.7);
+}
+.vote-card-3d:active {
+    transform: scale(0.95);
+}
+
 /* --- Spin The Wheel Animation & Styling --- */
 .wheel-wrapper {
     position: relative;

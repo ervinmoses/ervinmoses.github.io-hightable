@@ -144,17 +144,19 @@ function renderScoreboard(state, players) {
         const needs2Fails = playingCount >= 7 && (i === 3 || i === 4);
         let bg = 'rgba(255,255,255,0.1)';
         let icon = '';
+        let nodeClass = 'avalon-quest-node';
         if (qResults[i]) {
-            bg = qResults[i].failed ? '#c62828' : '#1565c0';
-            icon = qResults[i].failed ? '✕' : '✓';
+            bg = qResults[i].failed ? 'rgba(198,40,40,0.8)' : 'rgba(21,101,192,0.8)';
+            icon = qResults[i].failed ? '⚔' : '🛡';
         } else if (i === currentQuest) {
-            bg = 'rgba(255,200,0,0.3)';
-            icon = '►';
+            bg = 'rgba(212,175,55,0.2)';
+            icon = '👑';
+            nodeClass += ' active';
         }
         circles += `
-            <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
-                <div style="width:36px; height:36px; border-radius:50%; background:${bg}; display:flex; align-items:center; justify-content:center; font-size:0.9rem; color:#fff; border: ${i === currentQuest ? '2px solid gold' : '1px solid rgba(255,255,255,0.2)'};">${icon}</div>
-                <span style="font-size:0.6rem; color:rgba(255,255,255,0.5);">${req}${needs2Fails ? '★' : ''}</span>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                <div class="${nodeClass}" style="width:40px; height:40px; border-radius:50%; background:${bg}; display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:#fff; border: ${i === currentQuest ? '2px solid gold' : '1px solid rgba(255,255,255,0.2)'};">${icon}</div>
+                <span style="font-size:0.7rem; color:rgba(255,255,255,0.6); font-weight:bold;">${req}${needs2Fails ? '★' : ''}</span>
             </div>`;
     }
 
@@ -168,7 +170,7 @@ function renderScoreboard(state, players) {
                 <span style="font-size:0.7rem; color:rgba(255,255,255,0.4);">★=2 fails needed</span>
                 <span style="color:#ef5350; font-weight:bold; font-size:0.85rem;">⚔ Evil: ${evil}</span>
             </div>
-            <div style="display:flex; justify-content:space-around;">${circles}</div>
+            <div class="avalon-quest-track">${circles}</div>
             ${state.failsTracker > 0 ? `<p style="text-align:center; color:#ef5350; font-size:0.75rem; margin-top:8px;">⚠ Rejected Teams: ${state.failsTracker}/5</p>` : ''}
         </div>
     `;
@@ -243,14 +245,18 @@ function renderRevealRoles(state, isHost, myId) {
         <div class="glass text-center">
             <h2>🌙 Your Role</h2>
             <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Keep this secret! <strong>Tap and hold</strong> the card to reveal.</p>
-            <div id="roleCardContainer" style="margin:20px auto; position:relative; width:200px; height:280px; user-select:none; cursor:pointer;">
-                <div id="roleCardBack" style="position:absolute; top:0; left:0; width:200px; height:280px; background:linear-gradient(135deg,#2a2a4a,#1a1a2e); border-radius:14px; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#888; font-size:5rem; font-weight:bold; box-shadow:0 8px 24px rgba(0,0,0,0.6); border:2px solid rgba(255,255,255,0.15);">
-                    ?
-                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.3); margin-top:8px;">HOLD TO REVEAL</span>
+            <div id="roleCardContainer" class="avalon-flip-container">
+                <div class="avalon-flip-inner">
+                    <div class="avalon-flip-front">
+                        ?
+                        <span style="font-size:0.7rem; color:rgba(255,255,255,0.3); margin-top:8px;">TAP & HOLD TO REVEAL</span>
+                    </div>
+                    <div class="avalon-flip-back">
+                        <img src="${getAsset(myRole)}" style="width:100%; height:100%; object-fit:cover; border-radius: 12px;" alt="${myRole}">
+                    </div>
                 </div>
-                <img id="roleCardFront" src="${getAsset(myRole)}" class="hidden" style="position:absolute; top:0; left:0; width:200px; height:280px; border-radius:14px; object-fit:cover; box-shadow:0 8px 24px rgba(0,0,0,0.6);" alt="${myRole}">
             </div>
-            <div id="roleDescPanel" class="hidden" style="margin-top:14px; padding:14px 16px; background:rgba(0,0,0,0.55); border-radius:10px; border:1px solid ${teamColor}40; text-align:left;">
+            <div id="roleDescPanel" class="hidden" style="transition: opacity 0.3s; margin-top:14px; padding:14px 16px; background:rgba(0,0,0,0.55); border-radius:10px; border:1px solid ${teamColor}40; text-align:left;">
                 <p style="color:${teamColor}; font-weight:bold; font-size:0.85rem; margin-bottom:6px;">${ROLE_LABEL[myRole]} — ${teamLabel}</p>
                 <p style="color:rgba(255,255,255,0.75); font-size:0.82rem; line-height:1.5; margin:0;">${desc}</p>
             </div>
@@ -272,7 +278,8 @@ function renderNightPhase(state, players, myId, isHost) {
             if (el) el.textContent = remain;
         }, 200);
         return `
-            <div class="glass text-center" style="border:2px solid rgba(100,100,200,0.5);">
+            <div class="avalon-night-overlay"></div>
+            <div class="glass text-center" style="position:relative; z-index:100; border:2px solid rgba(100,100,200,0.5);">
                 <h2 class="text-danger">🌙 NIGHT PHASE</h2>
                 <p style="color:rgba(255,255,255,0.6);">Players are receiving their night information.</p>
                 <p style="margin-top:16px;">Transitioning in <strong id="nightTimer">${Math.max(0, nightDuration)}</strong>s...</p>
@@ -324,7 +331,8 @@ function renderNightPhase(state, players, myId, isHost) {
     }, 200);
 
     return `
-        <div class="glass text-center" style="border:2px solid rgba(100,100,200,0.5);">
+        <div class="avalon-night-overlay"></div>
+        <div class="glass text-center" style="position:relative; z-index:100; border:2px solid rgba(100,100,200,0.5);">
             <h2 class="text-danger">🌙 NIGHT PHASE</h2>
             <p style="color:rgba(255,255,255,0.5); font-size:0.8rem;">Closing in <strong id="nightTimer">${Math.max(0, nightDuration)}</strong>s — memorise this!</p>
             <div style="margin:16px 0; padding:16px; background:rgba(0,0,0,0.85); border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
@@ -350,9 +358,9 @@ function renderTeamBuilding(state, players, isHost, myId) {
         if (players[id].isHost) return;
         const isLeader = id === leaderId;
         pGrid += `
-            <div style="background:${isLeader ? 'rgba(255,200,0,0.2)' : 'rgba(255,255,255,0.05)'}; border:1px solid ${isLeader ? 'gold' : 'rgba(255,255,255,0.1)'}; border-radius:8px; padding:8px; text-align:center; position:relative;">
-                ${isLeader ? `<span style="position:absolute;top:-8px;right:-4px;font-size:1rem;">👑</span>` : ''}
-                <p style="margin:0; font-size:0.8rem; font-weight:bold; color:${isLeader ? 'gold' : '#fff'};">${players[id].name}</p>
+            <div class="avalon-badge" style="background:${isLeader ? 'rgba(255,200,0,0.2)' : ''}; border-color:${isLeader ? 'gold' : ''}; pointer-events: none;">
+                ${isLeader ? `<span style="position:absolute;top:-12px;right:-12px;font-size:1.6rem; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));">👑</span>` : ''}
+                <p style="margin:0; font-size:0.85rem; font-weight:bold; color:${isLeader ? 'gold' : '#fff'};">${players[id].name}</p>
             </div>`;
     });
     pGrid += `</div>`;
@@ -384,9 +392,9 @@ function renderTeamBuilding(state, players, isHost, myId) {
                 .map(id => {
                     const alreadySelected = proposedTeam.includes(id);
                     return `
-                        <label id="lbl-${id}" style="display:flex; align-items:center; gap:10px; padding:10px; background:rgba(255,255,255,0.04); border-radius:6px; margin-bottom:6px; cursor:pointer; border:1px solid rgba(255,255,255,0.08);">
-                            <input type="checkbox" class="chk-team" value="${id}" ${alreadySelected ? 'checked' : ''} style="width:18px; height:18px;">
-                            <span style="font-size:0.9rem;">${players[id].name}</span>
+                        <label id="lbl-${id}" class="avalon-badge ${alreadySelected ? 'selected' : ''}" style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
+                            <input type="checkbox" class="chk-team hidden" value="${id}" ${alreadySelected ? 'checked' : ''}>
+                            <span style="font-size:1rem; font-weight:bold;">${players[id].name}</span>
                         </label>`;
                 }).join('');
             controls = `
@@ -439,11 +447,11 @@ function renderPublicVoting(state, players, isHost, myId) {
             <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:12px;">Do you approve this team?</p>
             <div style="display:flex; justify-content:space-around; gap:12px;">
                 <div style="text-align:center; flex:1;">
-                    <img src="${getAsset('approve')}" id="btnVoteApprove" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid transparent; transition:border 0.2s;" class="vote-btn">
+                    <img src="${getAsset('approve')}" id="btnVoteApprove" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid transparent;" class="vote-card-3d">
                     <p style="color:#4fc3f7; font-size:0.75rem; margin-top:4px;">APPROVE</p>
                 </div>
                 <div style="text-align:center; flex:1;">
-                    <img src="${getAsset('reject')}" id="btnVoteReject" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid transparent; transition:border 0.2s;" class="vote-btn">
+                    <img src="${getAsset('reject')}" id="btnVoteReject" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid transparent;" class="vote-card-3d">
                     <p style="color:#ef5350; font-size:0.75rem; margin-top:4px;">REJECT</p>
                 </div>
             </div>`;
@@ -483,11 +491,11 @@ function renderQuestVoting(state, players, isHost, myId) {
             <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:16px;">Choose your card wisely:</p>
             <div style="display:flex; justify-content:space-around; gap:12px;">
                 <div style="text-align:center; flex:1;">
-                    <img src="${getAsset('success')}" id="btnQuestSuccess" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(79,195,247,0.5); transition:transform 0.15s;">
+                    <img src="${getAsset('success')}" id="btnQuestSuccess" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(79,195,247,0.5);" class="vote-card-3d">
                     <p style="color:#4fc3f7; font-size:0.75rem; margin-top:4px;">SUCCESS</p>
                 </div>
                 <div style="text-align:center; flex:1;">
-                    <img src="${getAsset('fail')}" id="btnQuestFail" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(239,83,80,0.5); transition:transform 0.15s;">
+                    <img src="${getAsset('fail')}" id="btnQuestFail" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(239,83,80,0.5);" class="vote-card-3d">
                     <p style="color:#ef5350; font-size:0.75rem; margin-top:4px;">FAIL</p>
                 </div>
             </div>`;
@@ -650,14 +658,12 @@ function attachEventListeners(state, players, myId, isHost) {
         const holdHint = document.getElementById('roleHoldHint');
 
         const showCard = () => {
-            front?.classList.remove('hidden');
-            back?.classList.add('hidden');
+            roleCardContainer.classList.add('flipped');
             descPanel?.classList.remove('hidden');
             if (holdHint) holdHint.style.display = 'none';
         };
         const hideCard = () => {
-            front?.classList.add('hidden');
-            back?.classList.remove('hidden');
+            roleCardContainer.classList.remove('flipped');
             descPanel?.classList.add('hidden');
             if (holdHint) holdHint.style.display = '';
             window.removeEventListener('mouseup', hideCard);
@@ -729,12 +735,19 @@ function attachEventListeners(state, players, myId, isHost) {
 
             allChks.forEach(chk => {
                 const label = chk.closest('label');
-                if (!chk.checked && count >= req) {
-                    chk.disabled = true;
-                    if (label) label.style.opacity = '0.4';
-                } else {
-                    chk.disabled = false;
-                    if (label) label.style.opacity = '1';
+                if (label) {
+                    if (chk.checked) {
+                        label.classList.add('selected');
+                    } else {
+                        label.classList.remove('selected');
+                    }
+                    if (!chk.checked && count >= req) {
+                        chk.disabled = true;
+                        label.classList.add('disabled');
+                    } else {
+                        chk.disabled = false;
+                        label.classList.remove('disabled');
+                    }
                 }
             });
 

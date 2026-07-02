@@ -43,6 +43,19 @@ const closeLoserAnimBtn = document.getElementById('closeLoserAnimBtn');
 let lastKnownState = null;
 let lastKnownPlayers = null;
 let localTurnOrder = [];
+let isCalculatingLoser = false;
+
+function areAllCardsRevealed(state) {
+    if (!state.hands || !state.revealed || !state.turnOrder) return false;
+    for (const pId of state.turnOrder) {
+        const hand = state.hands[pId] || [];
+        const revealed = state.revealed[pId] || [];
+        for (let i = 0; i < hand.length; i++) {
+            if (!revealed[i]) return false;
+        }
+    }
+    return true;
+}
 
 const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
 const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -117,6 +130,27 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
         lastKnownPlayers = players;
         
         renderUI(state, players);
+        
+        if (isHost && state.status === 'playing') {
+            let allPassed = true;
+            if (state.turnOrder && state.turnOrder.length > 0) {
+                for (let pId of state.turnOrder) {
+                    if (!state.passed || !state.passed[pId]) {
+                        allPassed = false;
+                        break;
+                    }
+                }
+            } else {
+                allPassed = false;
+            }
+            
+            if (allPassed && areAllCardsRevealed(state) && !isCalculatingLoser) {
+                isCalculatingLoser = true;
+                calculateLoser(state).finally(() => {
+                    isCalculatingLoser = false;
+                });
+            }
+        }
     });
     
     gameListeners.push({ ref: stateRef, listener });
@@ -404,9 +438,6 @@ async function advanceTurn(state) {
     
     if (found) {
         await set(ref(db, `rooms/${currentRoom}/gameState/currentTurnIndex`), nextIdx);
-    } else {
-        // Round is over. Calculate who lost.
-        calculateLoser(state);
     }
 }
 
