@@ -56,7 +56,8 @@
                     <p>The classic game of survival.</p>
                 </div>
                 <button class="details-btn" data-game="21" aria-label="Game Rules">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="16" x2="12" y2="12"></line>
                         <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -75,7 +76,8 @@
                     <p>The legendary game of social deduction.</p>
                 </div>
                 <button class="details-btn" data-game="avalon" aria-label="Game Rules">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="16" x2="12" y2="12"></line>
                         <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -97,7 +99,8 @@
                     <p>The ultimate roulette.</p>
                 </div>
                 <button class="details-btn" data-game="wheel" aria-label="Game Rules">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="16" x2="12" y2="12"></line>
                         <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -161,8 +164,8 @@
 
             <!-- Row 4: Actions -->
             <div id="actionButtonsRow" class="action-buttons-row mt-10 hidden">
-                <button id="giveCardBtn" class="btn primary">Give Card (Hit)</button>
-                <button id="passBtn" class="btn danger">Pass (Stand)</button>
+                <button id="giveCardBtn" class="btn primary">Give Card</button>
+                <button id="passBtn" class="btn danger">Pass</button>
             </div>
 
             <!-- Row 4.5: Deathmatch Host Controls -->
@@ -191,7 +194,9 @@
                 </div>
             </div>
 
-            <button id="restartGameBtn" class="btn secondary hidden" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 400px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">Restart Game</button>
+            <button id="restartGameBtn" class="btn secondary hidden"
+                style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 400px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">Restart
+                Game</button>
         </div>
     </div>
 
@@ -587,7 +592,9 @@
     </div>
 
     <div id="loserAnimationOverlay" class="massive-alert hidden" style="flex-direction: column;">
-        <div id="loserAnimProfilePic" class="profile-circle" style="width: 120px; height: 120px; border-width: 4px; border-color: #ff3b30; margin-bottom: 20px; font-size: 3rem; background-color: #333;"></div>
+        <div id="loserAnimProfilePic" class="profile-circle"
+            style="width: 120px; height: 120px; border-width: 4px; border-color: #ff3b30; margin-bottom: 20px; font-size: 3rem; background-color: #333;">
+        </div>
         <div class="alert-content text-center">
             <h1 id="loserAnimNameText" style="color: #ff3b30; font-size: 3rem; word-break: break-word;">PLAYER LOST</h1>
             <p id="loserAnimReasonSub" style="font-size: 1.2rem;">Lost Deathmatch.</p>
