@@ -37,26 +37,54 @@ export function joinWheelListener(roomCode, playerId, hostStatus) {
     
     wheelWinnerDisplay.classList.add('hidden');
 
-    // Listen to players to build the grid
+    // Listen to players to build the wheel
     onValue(ref(db, `rooms/${currentRoom}/players`), (snapshot) => {
         const players = snapshot.val();
         if (!players) return;
         
-        wheelPlayerGrid.innerHTML = '';
-        Object.keys(players).forEach(id => {
+        const wheelCircle = document.getElementById('wheelCircle');
+        if (!wheelCircle) return;
+        wheelCircle.innerHTML = '';
+        
+        const playerIds = Object.keys(players);
+        const playerCount = playerIds.length;
+        
+        if (playerCount === 0) return;
+        
+        const sliceAngle = 360 / playerCount;
+        let gradientStops = [];
+        
+        playerIds.forEach((id, index) => {
             const p = players[id];
-            const isHostP = p.isHost;
-            const div = document.createElement('div');
-            div.className = 'table-player-card glass wheel-player-box';
-            div.id = `wheel-player-${id}`;
-            div.innerHTML = `
-                <div class="table-player-header">
-                    <strong>${p.name}</strong>
-                    <span style="color: var(--accent-color);">${isHostP ? 'HOST' : ''}</span>
-                </div>
-            `;
-            wheelPlayerGrid.appendChild(div);
+            
+            // Premium alternating colors (dark charcoal and gold-tinted)
+            let color1 = index % 2 === 0 ? '#111' : '#222';
+            if (playerCount % 2 !== 0 && index === playerCount - 1) {
+                // If odd number of players, make the last slice distinct so first and last don't blend
+                color1 = '#300';
+            }
+            
+            const startAngle = index * sliceAngle;
+            const endAngle = (index + 1) * sliceAngle;
+            gradientStops.push(`${color1} ${startAngle}deg ${endAngle}deg`);
+            
+            const label = document.createElement('div');
+            label.className = 'wheel-label';
+            label.textContent = p.name;
+            
+            // align text radially in the middle of the slice
+            const textAngle = startAngle + (sliceAngle / 2) - 90;
+            label.style.transform = `rotate(${textAngle}deg)`;
+            
+            label.dataset.id = id;
+            label.dataset.index = index;
+            
+            wheelCircle.appendChild(label);
         });
+        
+        wheelCircle.style.background = `conic-gradient(${gradientStops.join(', ')})`;
+        wheelCircle.style.transition = 'none';
+        wheelCircle.style.transform = 'rotate(0deg)';
     });
 
     // Listen to wheel state
@@ -81,67 +109,53 @@ export function leaveWheelGame() {
     isHost = false;
 }
 
-let animationInterval = null;
-
 function startSpinAnimation(winnerId) {
     const spinBtn = document.getElementById('spinBtn');
     const wheelWinnerDisplay = document.getElementById('wheelWinnerDisplay');
-    const wheelWinnerText = document.getElementById('wheelWinnerText');
+    const wheelCircle = document.getElementById('wheelCircle');
     
     if (spinBtn) spinBtn.disabled = true;
-    wheelWinnerDisplay.classList.add('hidden');
+    if (wheelWinnerDisplay) wheelWinnerDisplay.classList.add('hidden');
+    if (!wheelCircle) return;
     
-    const boxes = Array.from(document.querySelectorAll('.wheel-player-box'));
-    if (boxes.length === 0) return;
+    const labels = Array.from(wheelCircle.querySelectorAll('.wheel-label'));
+    if (labels.length === 0) return;
     
-    if (animationInterval) {
-        clearInterval(animationInterval);
-        clearTimeout(animationInterval);
-    }
+    const winnerLabel = labels.find(l => l.dataset.id === winnerId);
+    if (!winnerLabel) return;
     
-    const winnerIndex = boxes.findIndex(b => b.id === `wheel-player-${winnerId}`);
-    if (winnerIndex === -1) {
-        finishSpin(winnerId);
-        return;
-    }
+    const index = parseInt(winnerLabel.dataset.index);
+    const playerCount = labels.length;
+    const sliceAngle = 360 / playerCount;
     
-    let currentIndex = 0;
-    const rounds = 4;
-    const totalSteps = (rounds * boxes.length) + winnerIndex;
-    let currentStep = 0;
+    // The winning slice's center is at `index * sliceAngle + sliceAngle/2`.
+    // We want this center to align with the pointer (top center, 0 degrees).
+    // So we rotate clockwise by `360 - that angle`.
+    const targetAngle = 360 - (index * sliceAngle + sliceAngle/2);
     
-    function nextStep() {
-        boxes.forEach(b => b.classList.remove('active-spin'));
-        boxes[currentIndex % boxes.length].classList.add('active-spin');
-        
-        currentStep++;
-        
-        if (currentStep <= totalSteps) {
-            const progress = currentStep / totalSteps;
-            const delay = 40 + (Math.pow(progress, 3) * 360);
-            
-            animationInterval = setTimeout(nextStep, delay);
-            currentIndex++;
-        } else {
-            finishSpin(winnerId);
-        }
-    }
+    // Add extra rotations for suspense
+    const extraSpins = 5 * 360;
     
-    nextStep();
+    // Add slight randomness within the slice so it doesn't always land dead center
+    const randomOffset = (Math.random() - 0.5) * (sliceAngle * 0.8);
+    
+    const finalRotation = extraSpins + targetAngle + randomOffset;
+    
+    // First reset transition in case of multiple spins (though host disables spinBtn)
+    // Then apply new rotation
+    wheelCircle.style.transition = 'transform 6s cubic-bezier(0.175, 0.885, 0.32, 1)';
+    wheelCircle.style.transform = `rotate(${finalRotation}deg)`;
+    
+    setTimeout(() => {
+        finishSpin(winnerId, winnerLabel.textContent);
+    }, 6000);
 }
 
-function finishSpin(winnerId) {
-    const boxes = document.querySelectorAll('.wheel-player-box');
-    boxes.forEach(b => b.classList.remove('active-spin'));
-    
-    const winnerBox = document.getElementById(`wheel-player-${winnerId}`);
-    if (winnerBox) {
-        winnerBox.classList.add('active-spin');
-        const winnerName = winnerBox.textContent;
-        const wheelWinnerText = document.getElementById('wheelWinnerText');
-        wheelWinnerText.textContent = `${winnerName} IS THE CHOSEN ONE!`;
-        document.getElementById('wheelWinnerDisplay').classList.remove('hidden');
-    }
+function finishSpin(winnerId, winnerName) {
+    const wheelWinnerText = document.getElementById('wheelWinnerText');
+    if (wheelWinnerText) wheelWinnerText.textContent = `${winnerName} IS THE CHOSEN ONE!`;
+    const wheelWinnerDisplay = document.getElementById('wheelWinnerDisplay');
+    if (wheelWinnerDisplay) wheelWinnerDisplay.classList.remove('hidden');
     
     const spinBtn = document.getElementById('spinBtn');
     if (spinBtn) spinBtn.disabled = false;

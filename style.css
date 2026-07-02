@@ -1056,3 +1056,66 @@ select {
     cursor: grabbing;
     background: rgba(255, 255, 255, 0.2);
 }
+
+/* --- Spin The Wheel Animation & Styling --- */
+.wheel-wrapper {
+    position: relative;
+    width: 320px;
+    height: 320px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.wheel-pointer {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 35px solid var(--accent-color);
+    z-index: 10;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)) drop-shadow(0 0 10px rgba(212, 175, 55, 0.8));
+}
+
+.wheel-circle-container {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 8px solid #1a1a1a;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 0 2px var(--accent-color), inset 0 0 20px rgba(0, 0, 0, 0.8);
+    position: relative;
+    overflow: hidden;
+}
+
+.wheel-circle {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    position: relative;
+    transition: transform cubic-bezier(0.175, 0.885, 0.32, 1) 6s;
+    /* conic-gradient will be applied via JS */
+}
+
+.wheel-label {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 50%;
+    height: 50%;
+    transform-origin: 0% 100%; /* center of wheel */
+    display: flex;
+    align-items: center;
+    padding-left: 20px; /* distance from center */
+    font-weight: 600;
+    font-size: 15px;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000, 0 0 5px rgba(0,0,0,0.8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
