@@ -441,7 +441,7 @@ if (bigTwoHitBtn) {
         if (lastKnownState.currentTrick && lastKnownState.currentTrick.playedBy !== myId) {
             const currentCards = lastKnownState.currentTrick.cards;
             if (selectedObj.length !== currentCards.length) {
-                showAlert('Invalid Play', \`You must play \${currentCards.length} cards.\`);
+                showAlert('Invalid Play', `You must play ${currentCards.length} cards.`);
                 return;
             }
             const currentCombo = getCombination(currentCards);
@@ -467,8 +467,8 @@ if (bigTwoHitBtn) {
         // Check for win
         if (newHand.length === 0) {
             // I WIN
-            await update(ref(db, \`rooms/\${currentRoom}/gameState\`), {
-                [\`hands/\${myId}\`]: newHand,
+            await update(ref(db, `rooms/${currentRoom}/gameState`), {
+                [`hands/${myId}`]: newHand,
                 currentTrick: newTrick,
                 passedPlayers: newPassed,
                 status: 'game_over',
@@ -479,8 +479,8 @@ if (bigTwoHitBtn) {
         }
 
         selectedCards = [];
-        await update(ref(db, \`rooms/\${currentRoom}/gameState\`), {
-            [\`hands/\${myId}\`]: newHand,
+        await update(ref(db, `rooms/${currentRoom}/gameState`), {
+            [`hands/${myId}`]: newHand,
             currentTrick: newTrick,
             passedPlayers: newPassed,
             firstPlay: false
@@ -497,7 +497,7 @@ if (bigTwoPassBtn) {
         const passed = lastKnownState.passedPlayers || {};
         passed[myId] = true;
         
-        await update(ref(db, \`rooms/\${currentRoom}/gameState/passedPlayers\`), passed);
+        await update(ref(db, `rooms/${currentRoom}/gameState/passedPlayers`), passed);
         await advanceTurnBigTwo(lastKnownState, passed);
     };
 }
@@ -507,7 +507,7 @@ if (bigTwoOpenNewBtn) {
         if (!lastKnownState) return;
         
         // Clear trick and allow current player to play anything
-        await update(ref(db, \`rooms/\${currentRoom}/gameState\`), {
+        await update(ref(db, `rooms/${currentRoom}/gameState`), {
             currentTrick: null,
             passedPlayers: {}
         });
@@ -531,7 +531,7 @@ async function advanceTurnBigTwo(state, currentPassed) {
     }
     
     if (found) {
-        await update(ref(db, \`rooms/\${currentRoom}/gameState\`), {
+        await update(ref(db, `rooms/${currentRoom}/gameState`), {
             currentTurnIndex: nextIdx
         });
     }
@@ -539,12 +539,12 @@ async function advanceTurnBigTwo(state, currentPassed) {
 
 function showGameOver(name, photoUrl) {
     if (!loserAnimationOverlay) return;
-    loserAnimNameText.textContent = \`\${name} WINS!\`;
+    loserAnimNameText.textContent = `${name} WINS!`;
     loserAnimNameText.style.color = 'gold';
     loserAnimReasonSub.textContent = 'They cleared all their cards.';
     
     if (photoUrl) {
-        loserAnimProfilePic.style.backgroundImage = \`url('\${photoUrl}')\`;
+        loserAnimProfilePic.style.backgroundImage = `url('${photoUrl}')`;
         loserAnimProfilePic.textContent = '';
         loserAnimProfilePic.style.backgroundSize = 'cover';
         loserAnimProfilePic.style.backgroundPosition = 'center';
@@ -561,7 +561,7 @@ if (document.getElementById('closeLoserAnimBtn')) {
     document.getElementById('closeLoserAnimBtn').addEventListener('click', async () => {
         if (loserAnimationOverlay) loserAnimationOverlay.classList.add('hidden');
         if (isHost && currentRoom && lastKnownState && lastKnownState.status === 'game_over' && document.getElementById('bigTwoGame').classList.contains('active')) {
-            await update(ref(db, \`rooms/\${currentRoom}\`), {
+            await update(ref(db, `rooms/${currentRoom}`), {
                 status: 'waiting',
                 gameState: null
             });
@@ -587,13 +587,13 @@ function renderAdjustPositionModalBigTwo() {
         const li = document.createElement('li');
         li.className = 'draggable-item';
         li.dataset.id = id;
-        li.innerHTML = \`
-            <span>\${lastKnownPlayers[id].name}</span>
+        li.innerHTML = `
+            <span>${lastKnownPlayers[id].name}</span>
             <div>
-                <button class="btn sm secondary move-up" data-idx="\${index}">↑</button>
-                <button class="btn sm secondary move-down" data-idx="\${index}">↓</button>
+                <button class="btn sm secondary move-up" data-idx="${index}">↑</button>
+                <button class="btn sm secondary move-down" data-idx="${index}">↓</button>
             </div>
-        \`;
+        `;
         draggablePlayerList.appendChild(li);
     });
 
@@ -632,7 +632,7 @@ if (saveTurnOrderBtn) {
             let currentIdx = lastKnownState.currentTurnIndex;
             if (currentIdx >= localTurnOrder.length) currentIdx = 0;
             
-            await update(ref(db, \`rooms/\${currentRoom}/gameState\`), {
+            await update(ref(db, `rooms/${currentRoom}/gameState`), {
                 turnOrder: localTurnOrder,
                 currentTurnIndex: currentIdx
             });
