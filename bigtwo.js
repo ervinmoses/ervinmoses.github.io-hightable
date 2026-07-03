@@ -214,21 +214,42 @@ function renderUI(state, players) {
         });
     }
 
+    const FAN_ANGLES = {
+        1: [0],
+        2: [-15, 15],
+        3: [-15, 0, 15],
+        4: [-20, -7, 7, 20],
+        5: [-25, -12, 0, 12, 25]
+    };
+
+    function applyFanStyle(cardEl, index, totalCards) {
+        const angles = FAN_ANGLES[totalCards] || FAN_ANGLES[5];
+        const rot = angles[index] || 0;
+        cardEl.style.transform = `rotate(${rot}deg)`;
+        cardEl.style.transformOrigin = 'bottom center';
+        if (index > 0) cardEl.style.marginLeft = '-35px';
+    }
+
     // 2. Render Current Trick
     if (bigTwoCurrentTrick) {
         bigTwoCurrentTrick.innerHTML = '';
+        bigTwoCurrentTrick.style.position = 'relative';
         if (state.currentTrick && state.currentTrick.cards) {
-            state.currentTrick.cards.forEach(card => {
+            const total = state.currentTrick.cards.length;
+            state.currentTrick.cards.forEach((card, idx) => {
                 const cardEl = document.createElement('div');
                 const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
                 cardEl.className = `playing-card big-two-card ${redClass}`;
                 cardEl.setAttribute('data-value', card.value);
                 cardEl.setAttribute('data-suit', getSuitSymbol(card.suit));
+                applyFanStyle(cardEl, idx, total);
                 bigTwoCurrentTrick.appendChild(cardEl);
             });
             const trickInfo = document.createElement('div');
+            trickInfo.style.position = 'absolute';
+            trickInfo.style.bottom = '-25px';
             trickInfo.style.width = '100%';
-            trickInfo.style.marginTop = '10px';
+            trickInfo.style.textAlign = 'center';
             trickInfo.style.color = '#aaa';
             trickInfo.style.fontSize = '0.9em';
             trickInfo.textContent = `Played by ${players[state.currentTrick.playedBy]?.name || 'Unknown'}`;
@@ -243,12 +264,14 @@ function renderUI(state, players) {
     if (bigTwoPreviousTrick) {
         bigTwoPreviousTrick.innerHTML = '';
         if (state.previousTrick && state.previousTrick.cards) {
-            state.previousTrick.cards.forEach(card => {
+            const total = state.previousTrick.cards.length;
+            state.previousTrick.cards.forEach((card, idx) => {
                 const cardEl = document.createElement('div');
                 const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
                 cardEl.className = `playing-card big-two-card ${redClass}`;
                 cardEl.setAttribute('data-value', card.value);
                 cardEl.setAttribute('data-suit', getSuitSymbol(card.suit));
+                applyFanStyle(cardEl, idx, total);
                 bigTwoPreviousTrick.appendChild(cardEl);
             });
         }

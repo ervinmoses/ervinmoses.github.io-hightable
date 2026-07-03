@@ -1,6 +1,6 @@
 import {
     startAvalonGame,
-    beginNightPhase,
+    confirmSetupOrder,
     proposeLeader,
     submitTeam,
     submitPublicVote,
@@ -10,7 +10,9 @@ import {
     assassinate,
     resetAvalonGame,
     QUEST_REQUIREMENTS,
-    continueQuestResult
+    continueQuestResult,
+    inspectLotl,
+    finishLotl
 } from './avalon.js?v=29';
 
 const avalonGameArea = document.getElementById('avalonGameArea');
@@ -70,8 +72,8 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
         html += renderMiniRoleCard(_myRole);
     }
 
-    // Scoreboard (show in all phases except setup & reveal_roles)
-    if (!['setup', 'reveal_roles'].includes(state.phase)) {
+    // Scoreboard (show in all phases except setup, reveal_roles & setup_order)
+    if (!['setup', 'reveal_roles', 'setup_order'].includes(state.phase)) {
         html += renderScoreboard(state, players);
     }
 
@@ -81,6 +83,9 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
             break;
         case 'reveal_roles':
             html += renderRevealRoles(state, isHost, myId);
+            break;
+        case 'setup_order':
+            html += renderSetupOrder(state, isHost, players, myId);
             break;
         case 'night_phase':
             html += renderNightPhase(state, players, myId, isHost);
@@ -98,6 +103,9 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
             break;
         case 'assassination':
             html += renderAssassination(state, players, myId, isHost);
+            break;
+        case 'lotl_phase':
+            html += renderLotlPhase(state, players, isHost, myId);
             break;
         case 'quest_result':
             html += renderQuestResult(state, players, isHost);
@@ -208,30 +216,67 @@ function renderSetup(isHost, players) {
                     <h4 style="color:var(--accent-color); margin-bottom:10px;">Players: ${pCount}</h4>
                     ${pList}
                 </div>
-            </div>`;
+        </div>`;
     }
+}
+
+// ========================
+// PHASE 1.5: SETUP ORDER (Host Only)
+// ========================
+function renderSetupOrder(state, isHost, players, myId) {
+    if (!isHost) {
+        // Players see their roles while host sets up
+        return renderRevealRoles(state, false, myId);
+    }
+    
+    // Host UI
+    let pListHTML = '';
+    const turnOrder = state.turnOrder || [];
+    turnOrder.forEach((id, idx) => {
+        const p = players[id];
+        if (!p) return;
+        pListHTML += `
+            <div class="draggable-item" data-id="${id}" style="display:flex; justify-content:space-between; align-items:center;">
+                <span><strong style="color:var(--accent-color);">${idx + 1}.</strong> ${p.name}</span>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn secondary sm order-up" data-idx="${idx}" style="padding:4px 8px;">▲</button>
+                    <button class="btn secondary sm order-down" data-idx="${idx}" style="padding:4px 8px;">▼</button>
+                </div>
+            </div>
+        `;
+    });
+
+    const lotlOn = state.lotlEnabled ? 'checked' : '';
+    
+    return `
+        <div class="glass text-center">
+            <h2 style="margin-bottom:6px;">⚔ Setup Roles & Order</h2>
+            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Adjust the player order (Leader passes sequentially). Turn on Lady of the Lake if desired.</p>
+            
+            <div style="margin:16px 0; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px; text-align:left;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="chkLotl" class="chk-team" ${lotlOn}>
+                    <strong>Enable Lady of the Lake</strong>
+                </label>
+                <p style="font-size:0.75rem; color:rgba(255,255,255,0.5); margin-top:4px;">When on, the last player receives the Lady of the Lake token to inspect another player's loyalty.</p>
+            </div>
+            
+            <div style="margin:16px 0; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px;">
+                <h4 style="color:var(--accent-color); margin-bottom:10px;">Player Turn Order</h4>
+                <div id="avalonSortableList" style="text-align:left;">
+                    ${pListHTML}
+                </div>
+            </div>
+            
+            <button id="btnConfirmSetup" class="btn primary full-width mt-10">Next: Begin Night Phase 🌙</button>
+        </div>`;
 }
 
 // ========================
 // PHASE 2: REVEAL ROLES
 // ========================
 function renderRevealRoles(state, isHost, myId) {
-    if (isHost) {
-        return `
-            <div class="glass text-center">
-                <h2>🌙 Roles Distributed</h2>
-                <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">All players are viewing their roles. When everyone is ready, begin the Night Phase so players can see their night information.</p>
-                <div style="margin:20px 0; padding:16px; background:rgba(0,0,0,0.3); border-radius:8px;">
-                    <p style="font-size:0.85rem; color:rgba(255,255,255,0.5);">ℹ Night Phase reveals:</p>
-                    <ul style="text-align:left; font-size:0.8rem; color:rgba(255,255,255,0.5); margin:8px 0 0 16px; line-height:1.8;">
-                        <li>Merlin sees Evil (not Mordred)</li>
-                        <li>Percival sees Merlin & Morgana</li>
-                        <li>Evil see each other (not Oberon)</li>
-                    </ul>
-                </div>
-                <button id="btnBeginNight" class="btn primary full-width">Begin Night Phase 🌙</button>
-            </div>`;
-    }
+    if (isHost) return ''; // Host does not see roles
 
     const myRole = state.roles?.[myId];
     if (!myRole) return `<div class="glass text-center"><p>Loading your role...</p></div>`;
@@ -357,9 +402,20 @@ function renderTeamBuilding(state, players, isHost, myId) {
     Object.keys(players).forEach(id => {
         if (players[id].isHost) return;
         const isLeader = id === leaderId;
+        const fails = state.failsTracker || 0;
+        let pouchHtml = '';
+        if (isLeader) {
+            pouchHtml = `
+                <div style="position:absolute; top:-15px; right:-10px; width:35px; height:35px;">
+                    <img src="./assets/avalon/pouch.jpg" style="width:100%; height:100%; border-radius:50%; object-fit:cover; box-shadow:0 2px 4px rgba(0,0,0,0.8);">
+                    ${fails > 0 ? `<div style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; border:1px solid white;">${fails}</div>` : ''}
+                </div>
+            `;
+        }
+        
         pGrid += `
-            <div class="avalon-badge" style="background:${isLeader ? 'rgba(255,200,0,0.2)' : ''}; border-color:${isLeader ? 'gold' : ''}; pointer-events: none;">
-                ${isLeader ? `<span style="position:absolute;top:-12px;right:-12px;font-size:1.6rem; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));">👑</span>` : ''}
+            <div class="avalon-badge" style="position:relative; background:${isLeader ? 'rgba(255,200,0,0.2)' : ''}; border-color:${isLeader ? 'gold' : ''}; pointer-events: none;">
+                ${pouchHtml}
                 <p style="margin:0; font-size:0.85rem; font-weight:bold; color:${isLeader ? 'gold' : '#fff'};">${players[id].name}</p>
             </div>`;
     });
@@ -370,25 +426,15 @@ function renderTeamBuilding(state, players, isHost, myId) {
 
     if (!leaderId) {
         if (isHost) {
-            let opts = Object.keys(players)
-                .filter(id => !players[id].isHost)
-                .map(id => `<option value="${id}">${players[id].name}</option>`).join('');
-            controls = `
-                <div class="glass mt-10">
-                    <h4 style="margin-bottom:10px;">📋 Assign Round Leader</h4>
-                    <select id="selLeader" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); border-radius:8px; color:#fff; margin-bottom:10px;">
-                        <option value="">Select player...</option>${opts}
-                    </select>
-                    <button id="btnAssignLeader" class="btn primary full-width">Assign Leader 👑</button>
-                </div>`;
+            controls = `<p style="color:rgba(255,255,255,0.4); margin-top:16px; font-size:0.85rem;">⏳ Assigning leader...</p>`;
         } else {
-            controls = `<p style="color:rgba(255,255,255,0.4); margin-top:16px; font-size:0.85rem;">⏳ Waiting for Host to assign a Leader...</p>`;
+            controls = `<p style="color:rgba(255,255,255,0.4); margin-top:16px; font-size:0.85rem;">⏳ Assigning leader...</p>`;
         }
     } else {
         if (!isHost && myId === leaderId) {
             // Leader sees the checkbox selection
             let chks = Object.keys(players)
-                .filter(id => !players[id].isHost && id !== leaderId)
+                .filter(id => !players[id].isHost)
                 .map(id => {
                     const alreadySelected = proposedTeam.includes(id);
                     return `
@@ -642,6 +688,68 @@ function renderGameOver(state, isHost, players) {
 }
 
 // ========================
+// LADY OF THE LAKE PHASE
+// ========================
+function renderLotlPhase(state, players, isHost, myId) {
+    const holder = state.lotlHolder;
+    const holderName = players[holder]?.name || 'Unknown';
+    
+    if (isHost) {
+        return `
+            <div class="glass text-center">
+                <h3>💧 Lady of the Lake</h3>
+                <p style="color:rgba(255,255,255,0.6);">${holderName} is using the Lady of the Lake.</p>
+                <p style="color:rgba(255,255,255,0.4); margin-top:16px;">Waiting for them to select a player...</p>
+            </div>
+        `;
+    }
+
+    if (myId === holder) {
+        if (state.lotlInspected) {
+            // Show result
+            const targetRole = state.roles[state.lotlInspected];
+            const isGood = GOOD_ROLES.includes(targetRole);
+            const teamAsset = isGood ? 'blueteam' : 'redteam';
+            return `
+                <div class="glass text-center">
+                    <h3>💧 Loyalty Revealed</h3>
+                    <p style="color:rgba(255,255,255,0.6);">${players[state.lotlInspected].name}'s loyalty is:</p>
+                    <div style="margin:20px auto; width:120px; height:160px;">
+                        <img src="${getAsset(teamAsset)}" style="width:100%; height:100%; object-fit:cover; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.5);">
+                    </div>
+                    <button id="btnFinishLotl" class="btn primary full-width mt-10">End Turn (Pass Token) →</button>
+                </div>
+            `;
+        } else {
+            // Select someone
+            let chks = Object.keys(players)
+                .filter(id => !players[id].isHost && id !== holder)
+                .map(id => `
+                    <label class="avalon-badge" style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
+                        <input type="radio" name="lotlTarget" class="chk-team hidden" value="${id}">
+                        <span style="font-size:1rem; font-weight:bold;">${players[id].name}</span>
+                    </label>
+                `).join('');
+            return `
+                <div class="glass text-center">
+                    <h3>💧 Lady of the Lake</h3>
+                    <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">You hold the token. Select a player to secretly check their loyalty.</p>
+                    <div style="margin-top:16px;">${chks}</div>
+                    <button id="btnInspectLotl" class="btn primary full-width mt-10" disabled>Inspect Loyalty</button>
+                </div>
+            `;
+        }
+    } else {
+        return `
+            <div class="glass text-center">
+                <h3>💧 Lady of the Lake</h3>
+                <p style="color:rgba(255,255,255,0.6);">${holderName} is choosing someone to inspect.</p>
+            </div>
+        `;
+    }
+}
+
+// ========================
 // EVENT LISTENERS
 // ========================
 function attachEventListeners(state, players, myId, isHost) {
@@ -707,10 +815,49 @@ function attachEventListeners(state, players, myId, isHost) {
     }
 
     // Night phase trigger
-    const btnBeginNight = document.getElementById('btnBeginNight');
-    if (btnBeginNight) btnBeginNight.onclick = beginNightPhase;
+    // Setup Order Logic
+    const btnConfirmSetup = document.getElementById('btnConfirmSetup');
+    if (btnConfirmSetup) {
+        btnConfirmSetup.onclick = () => {
+            const lotlEnabled = document.getElementById('chkLotl')?.checked || false;
+            const turnOrder = Array.from(document.querySelectorAll('#avalonSortableList .draggable-item')).map(el => el.getAttribute('data-id'));
+            confirmSetupOrder(lotlEnabled, turnOrder);
+        };
+    }
+
+    const sortableList = document.getElementById('avalonSortableList');
+    if (sortableList) {
+        sortableList.querySelectorAll('.order-up').forEach(btn => {
+            btn.onclick = (e) => {
+                const item = e.target.closest('.draggable-item');
+                const prev = item.previousElementSibling;
+                if (prev) {
+                    sortableList.insertBefore(item, prev);
+                    reindexList(sortableList);
+                }
+            };
+        });
+        sortableList.querySelectorAll('.order-down').forEach(btn => {
+            btn.onclick = (e) => {
+                const item = e.target.closest('.draggable-item');
+                const next = item.nextElementSibling;
+                if (next) {
+                    sortableList.insertBefore(next, item);
+                    reindexList(sortableList);
+                }
+            };
+        });
+    }
+
+    function reindexList(list) {
+        list.querySelectorAll('.draggable-item').forEach((item, idx) => {
+            const strong = item.querySelector('strong');
+            if (strong) strong.textContent = (idx + 1) + '.';
+        });
+    }
 
     // Assign leader
+
     const btnAssignLeader = document.getElementById('btnAssignLeader');
     if (btnAssignLeader) {
         btnAssignLeader.onclick = () => {
@@ -810,10 +957,32 @@ function attachEventListeners(state, players, myId, isHost) {
     const btnAssassinate = document.getElementById('btnAssassinate');
     if (btnAssassinate) {
         btnAssassinate.onclick = () => {
-            const val = document.getElementById('selAssassinate')?.value;
-            if (val) assassinate(val);
+            const target = document.querySelector('input[name="assassinTarget"]:checked')?.value;
+            if (target) assassinate(target);
+        };
+        const radios = document.querySelectorAll('input[name="assassinTarget"]');
+        radios.forEach(r => r.addEventListener('change', () => btnAssassinate.disabled = false));
+    }
+
+    // Lady of the Lake
+    const btnInspectLotl = document.getElementById('btnInspectLotl');
+    if (btnInspectLotl) {
+        const lotlRadios = document.querySelectorAll('input[name="lotlTarget"]');
+        lotlRadios.forEach(r => r.addEventListener('change', () => {
+            btnInspectLotl.disabled = false;
+            document.querySelectorAll('input[name="lotlTarget"]').forEach(i => {
+                if (i.checked) i.closest('label').classList.add('selected');
+                else i.closest('label').classList.remove('selected');
+            });
+        }));
+        btnInspectLotl.onclick = () => {
+            const selected = document.querySelector('input[name="lotlTarget"]:checked')?.value;
+            if (selected) inspectLotl(selected);
         };
     }
+    
+    const btnFinishLotl = document.getElementById('btnFinishLotl');
+    if (btnFinishLotl) btnFinishLotl.onclick = () => finishLotl(state);
 
     // Restart
     const restartAvalonBtn = document.getElementById('restartAvalonBtn');

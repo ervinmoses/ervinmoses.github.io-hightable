@@ -127,18 +127,29 @@ export async function startAvalonGame() {
     });
 
     await update(ref(db, `rooms/${currentRoom}/avalonState`), {
-        phase: 'reveal_roles',
+        phase: 'setup_order',
         roles: assignedRoles,
         scores: { good: 0, evil: 0, currentQuest: 0 },
-        questResults: []
+        questResults: [],
+        turnOrder: playingIds,
+        lotlEnabled: false,
+        lotlHolder: null,
+        failsTracker: 0
     });
 }
 
-export async function beginNightPhase() {
+export async function confirmSetupOrder(lotlEnabled, turnOrder) {
     if (!isHost) return;
+    
+    // Choose random starting leader
+    const randomLeaderId = turnOrder[Math.floor(Math.random() * turnOrder.length)];
+
     await update(ref(db, `rooms/${currentRoom}/avalonState`), {
         phase: 'night_phase',
-        nightEndTime: Date.now() + 5000 
+        nightEndTime: Date.now() + 5000,
+        turnOrder: turnOrder,
+        lotlEnabled: lotlEnabled,
+        lotlHolder: lotlEnabled ? turnOrder[turnOrder.length - 1] : null
     });
     
     // Host drives transition after 5.5s
@@ -147,7 +158,7 @@ export async function beginNightPhase() {
         if (s.val().phase === 'night_phase') {
             await update(ref(db, `rooms/${currentRoom}/avalonState`), {
                 phase: 'team_building',
-                roundLeader: null,
+                roundLeader: randomLeaderId,
                 proposedTeam: [],
                 votes: {},
                 failsTracker: 0
@@ -157,11 +168,7 @@ export async function beginNightPhase() {
 }
 
 export async function proposeLeader(leaderId) {
-    if (!isHost) return;
-    await update(ref(db, `rooms/${currentRoom}/avalonState`), {
-        roundLeader: leaderId,
-        proposedTeam: []
-    });
+    // Deprecated via manual assign; logic now handled automatically
 }
 
 export async function submitTeam(teamIds) {
@@ -218,10 +225,14 @@ export async function checkPublicVotesComplete(state) {
                     reason: '5 consecutive rejected teams'
                 });
             } else {
+                const turnOrder = state.turnOrder || [];
+                let currentIndex = turnOrder.indexOf(state.roundLeader);
+                let nextLeader = turnOrder[(currentIndex + 1) % turnOrder.length];
+                
                 await update(ref(db, `rooms/${currentRoom}/avalonState`), {
                     phase: 'team_building',
                     failsTracker: fails,
-                    roundLeader: null,
+                    roundLeader: nextLeader,
                     proposedTeam: []
                 });
             }
@@ -296,16 +307,34 @@ export async function continueQuestResult(state) {
         });
     } else {
         const nextQuest = newScores.currentQuest + 1;
-        await update(ref(db, `rooms/${currentRoom}/avalonState`), {
-            phase: 'team_building',
-            scores: { ...newScores, currentQuest: nextQuest },
-            roundLeader: null,
-            proposedTeam: [],
-            publicVotes: {},
-            questVotes: {},
-            questResultData: null,
-            failsTracker: 0
-        });
+        const turnOrder = state.turnOrder || [];
+        let currentIndex = turnOrder.indexOf(state.roundLeader);
+        let nextLeader = turnOrder[(currentIndex + 1) % turnOrder.length];
+
+        if (state.lotlEnabled && [1, 2, 3].includes(newScores.currentQuest)) {
+            await update(ref(db, `rooms/${currentRoom}/avalonState`), {
+                phase: 'lotl_phase',
+                scores: { ...newScores, currentQuest: nextQuest },
+                roundLeader: nextLeader,
+                proposedTeam: [],
+                publicVotes: {},
+                questVotes: {},
+                questResultData: null,
+                failsTracker: 0,
+                lotlInspected: null
+            });
+        } else {
+            await update(ref(db, `rooms/${currentRoom}/avalonState`), {
+                phase: 'team_building',
+                scores: { ...newScores, currentQuest: nextQuest },
+                roundLeader: nextLeader,
+                proposedTeam: [],
+                publicVotes: {},
+                questVotes: {},
+                questResultData: null,
+                failsTracker: 0
+            });
+        }
     }
 }
 
@@ -333,6 +362,20 @@ export async function resetAvalonGame() {
     if (!isHost) return;
     await update(ref(db, `rooms/${currentRoom}/avalonState`), {
         phase: 'setup'
+    });
+}
+
+export async function inspectLotl(targetId) {
+    await update(ref(db, `rooms/${currentRoom}/avalonState`), {
+        lotlInspected: targetId
+    });
+}
+
+export async function finishLotl(state) {
+    await update(ref(db, `rooms/${currentRoom}/avalonState`), {
+        phase: 'team_building',
+        lotlHolder: state.lotlInspected,
+        lotlInspected: null
     });
 }
 
