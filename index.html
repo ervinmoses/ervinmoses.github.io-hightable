@@ -64,6 +64,28 @@
                     </svg>
                 </button>
             </div>
+            <div class="game-card" id="bigTwoBtn">
+                <div class="card-content">
+                    <h3 style="display: flex; align-items: center; gap: 8px;">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 2L12 8L18 2"></path>
+                            <path d="M6 22L12 16L18 22"></path>
+                            <path d="M2 12H22"></path>
+                        </svg>
+                        Big Two
+                    </h3>
+                    <p>The ultimate card shedding game.</p>
+                </div>
+                <button class="details-btn" data-game="bigtwo" aria-label="Game Rules">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </button>
+            </div>
             <div class="game-card" id="avalonBtn">
                 <div class="card-content">
                     <h3 style="display: flex; align-items: center; gap: 8px;">
@@ -135,7 +157,6 @@
         </div>
     </div>
 
-    <!-- Game View (21 Card Game) -->
     <div id="game" class="view">
         <div class="game-header">
             <span class="room-indicator">Room: <span id="gameRoomCode"></span></span>
@@ -195,6 +216,61 @@
             </div>
 
             <button id="restartGameBtn" class="btn secondary hidden"
+                style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 400px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">Restart
+                Game</button>
+        </div>
+    </div>
+
+    <!-- Big Two Game View -->
+    <div id="bigTwoGame" class="view">
+        <div class="game-header">
+            <span class="room-indicator">Room: <span id="bigTwoRoomCode"></span></span>
+            <button id="leaveBigTwoBtn" class="btn sm danger">Leave</button>
+        </div>
+
+        <div class="game-area">
+            
+            <div class="poker-table glass text-center mt-10">
+                <h3 style="color: var(--accent-color); margin-bottom: 15px;">The Table</h3>
+                <div id="bigTwoTablePlayers" class="table-players-layout">
+                    <!-- 4 Players dynamically injected -->
+                </div>
+                <div id="bigTwoCurrentTrick" class="cards-container mt-20" style="min-height: 100px; justify-content: center;">
+                    <!-- Currently played trick cards go here -->
+                </div>
+            </div>
+
+            <div id="bigTwoAdjustPositionRow" class="text-right mt-10 hidden">
+                <button id="bigTwoAdjustPositionBtn" class="btn secondary sm">Adjust Turn Order</button>
+            </div>
+
+            <div class="glass mt-10">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4>Your Hand</h4>
+                    <button id="bigTwoRevealBtn" class="btn secondary sm">Reveal All</button>
+                </div>
+                <div id="bigTwoMyCardsArea" class="cards-container big-two-hand" style="justify-content: center; min-height: 120px;">
+                    <!-- My Cards injected here -->
+                </div>
+            </div>
+
+            <div id="bigTwoActionButtonsRow" class="action-buttons-row mt-10 hidden">
+                <button id="bigTwoHitBtn" class="btn primary">Play Selected</button>
+                <button id="bigTwoPassBtn" class="btn danger">Pass</button>
+                <button id="bigTwoOpenNewBtn" class="btn secondary hidden">Open New</button>
+            </div>
+
+            <div id="bigTwoStatusRow" class="status-row glass mt-10">
+                <div class="status-right" id="bigTwoCurrentPlayerTurnDisplay">
+                    <div id="bigTwoTurnProfilePic" class="profile-circle"></div>
+                    <div class="status-info">
+                        <div id="bigTwoTurnPlayerName" style="font-weight: bold;">Waiting...</div>
+                        <div id="bigTwoTurnPlayerCards" style="font-size: 0.9em; opacity: 0.8;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="restartBigTwoBtn" class="btn secondary hidden"
                 style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 400px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">Restart
                 Game</button>
         </div>
@@ -616,8 +692,9 @@
     </div>
 
     <script type="module" src="firebase-config.js?v=32"></script>
-    <script type="module" src="app.js?v=32"></script>
+    <script type="module" src="app.js?v=33"></script>
     <script type="module" src="avalon-ui.js?v=32"></script>
+    <script type="module" src="bigtwo.js?v=1"></script>
 </body>
 
 </html>

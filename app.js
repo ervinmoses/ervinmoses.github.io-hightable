@@ -3,6 +3,7 @@ import { ref, set, onValue, update, remove, get, onDisconnect } from "https://ww
 import { initGame, joinGameListener, leaveGame } from './21card.js?v=29';
 import { initWheelGame, joinWheelListener, leaveWheelGame } from './wheel.js?v=29';
 import { initAvalon, joinAvalonListener, leaveAvalon } from './avalon.js?v=29';
+import { initBigTwo, joinBigTwoListener, leaveBigTwo } from './bigtwo.js?v=1';
 
 // ---- DOM Elements ----
 const views = document.querySelectorAll('.view');
@@ -21,6 +22,7 @@ const registerBtn = document.getElementById('registerBtn');
 // Home / Lobby
 const cardGamesBtn = document.getElementById('cardGamesBtn');
 const avalonBtn = document.getElementById('avalonBtn');
+const bigTwoBtn = document.getElementById('bigTwoBtn');
 const spinWheelBtn = document.getElementById('spinWheelBtn');
 const createGameBtn = document.getElementById('createGameBtn');
 const publicRoomsList = document.getElementById('publicRoomsList');
@@ -167,6 +169,12 @@ cardGamesBtn.addEventListener('click', () => {
     switchView('lobby');
 });
 
+bigTwoBtn.addEventListener('click', () => {
+    currentGameType = 'bigtwo';
+    document.getElementById('lobbyTitle').textContent = 'Big Two Lobby';
+    switchView('lobby');
+});
+
 spinWheelBtn.addEventListener('click', () => {
     currentGameType = 'wheel';
     document.getElementById('lobbyTitle').textContent = 'Spin The Wheel Lobby';
@@ -204,6 +212,18 @@ const gameRules = {
         <li>The Host spins the wheel.</li>
         <li>Whichever player the wheel lands on is eliminated from the game.</li>
         <li>The game continues spinning round by round until only one player survives.</li>
+    </ul>
+</div>`,
+    'bigtwo': `
+<div class="premium-rules">
+    <p><span class="highlight">Goal:</span> Be the first to shed all your cards.</p>
+    <ul class="premium-rules-list">
+        <li>The game starts with the player holding the <span class="highlight">3 of Diamonds</span>.</li>
+        <li>Card rankings from lowest to highest: 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A, 2.</li>
+        <li>Suit rankings: Diamonds < Clubs < Hearts < Spades.</li>
+        <li>Play single cards, pairs, three of a kind, or 5-card combinations (straight, flush, full house, four of a kind, straight flush).</li>
+        <li>You must play the same number of cards as the previous play and beat its value.</li>
+        <li>If all other players pass, you can open a new trick with any valid combination.</li>
     </ul>
 </div>`
 };
@@ -380,6 +400,8 @@ async function joinRoom(roomCode, skipCheck = false) {
     if (wheelRoomCode) wheelRoomCode.textContent = roomCode;
     const avalonRoomCode = document.getElementById('avalonRoomCode');
     if (avalonRoomCode) avalonRoomCode.textContent = roomCode;
+    const bigTwoRoomCode = document.getElementById('bigTwoRoomCode');
+    if (bigTwoRoomCode) bigTwoRoomCode.textContent = roomCode;
     if (myPlayerName) myPlayerName.textContent = currentPlayer.name;
 
     if (currentPlayer.isHost) {
@@ -418,6 +440,9 @@ async function joinRoom(roomCode, skipCheck = false) {
             } else if (currentGameType === 'avalon') {
                 switchView('avalonGame');
                 joinAvalonListener(roomCode, currentPlayer.id, currentPlayer.isHost);
+            } else if (currentGameType === 'bigtwo') {
+                switchView('bigTwoGame');
+                joinBigTwoListener(roomCode, currentPlayer.id, currentPlayer.isHost);
             } else {
                 switchView('game');
                 joinGameListener(roomCode, currentPlayer.id, currentPlayer.isHost);
@@ -437,6 +462,10 @@ async function joinRoom(roomCode, skipCheck = false) {
                 leaveAvalon();
                 switchView('lobby');
             }
+            if (document.getElementById('bigTwoGame')?.classList.contains('active')) {
+                leaveBigTwo();
+                switchView('lobby');
+            }
         }
     });
 }
@@ -452,6 +481,8 @@ startGameBtn.addEventListener('click', async () => {
             await initWheelGame(currentPlayer.roomCode);
         } else if (currentGameType === 'avalon') {
             await initAvalon(currentPlayer.roomCode);
+        } else if (currentGameType === 'bigtwo') {
+            await initBigTwo(currentPlayer.roomCode);
         } else {
             await initGame(currentPlayer.roomCode);
         }
@@ -482,6 +513,14 @@ if (leaveWheelBtn) {
 const leaveAvalonBtn = document.getElementById('leaveAvalonBtn');
 if (leaveAvalonBtn) {
     leaveAvalonBtn.addEventListener('click', () => {
+        leaveRoom();
+        switchView('lobby');
+    });
+}
+
+const leaveBigTwoBtn = document.getElementById('leaveBigTwoBtn');
+if (leaveBigTwoBtn) {
+    leaveBigTwoBtn.addEventListener('click', () => {
         leaveRoom();
         switchView('lobby');
     });
@@ -521,6 +560,7 @@ async function leaveRoom() {
     leaveGame();
     leaveWheelGame();
     leaveAvalon();
+    leaveBigTwo();
 
     currentPlayer.roomCode = null;
     currentPlayer.isHost = false;
