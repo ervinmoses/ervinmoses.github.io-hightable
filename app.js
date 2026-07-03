@@ -325,9 +325,13 @@ onValue(ref(db, 'rooms'), (snapshot) => {
             let isJoinable = false;
             const rGameType = room.gameType || '21';
 
-            if (room.status === 'waiting') {
+            let isFull = false;
+            if (rGameType === 'bigtwo' && pCount >= 4) isFull = true;
+            if (rGameType === 'avalon' && pCount >= 14) isFull = true;
+
+            if (room.status === 'waiting' && !isFull) {
                 isJoinable = true;
-            } else if (room.status === 'playing' && rGameType === 'avalon') {
+            } else if (room.status === 'playing' && rGameType === 'avalon' && !isFull) {
                 if (room.avalonState && room.avalonState.phase === 'setup') {
                     isJoinable = true;
                 }
@@ -378,6 +382,20 @@ async function joinRoom(roomCode, skipCheck = false) {
 
         const roomData = snapshot.val();
         currentGameType = roomData.gameType || '21';
+        
+        const currentPlayers = roomData.players ? Object.keys(roomData.players).length : 0;
+        if (currentGameType === 'bigtwo' && currentPlayers >= 4) {
+            showAlert('Room Full', 'Big Two tables have a maximum of 4 players.');
+            currentPlayer.roomCode = null;
+            currentPlayer.isHost = false;
+            return;
+        }
+        if (currentGameType === 'avalon' && currentPlayers >= 14) {
+            showAlert('Room Full', 'Avalon tables have a maximum of 14 players.');
+            currentPlayer.roomCode = null;
+            currentPlayer.isHost = false;
+            return;
+        }
     }
 
     // Add player to room
@@ -477,6 +495,27 @@ startGameBtn.addEventListener('click', async () => {
     startGameBtn.disabled = true;
 
     try {
+        const snap = await get(ref(db, `rooms/${currentPlayer.roomCode}/players`));
+        const players = snap.val() || {};
+        const pCount = Object.keys(players).length;
+
+        if (currentGameType === '21' && pCount < 2) {
+            showAlert('Not Enough Players', '21 Card Game requires at least 2 players.');
+            return;
+        }
+        if (currentGameType === 'bigtwo' && pCount < 2) {
+            showAlert('Not Enough Players', 'Big Two requires at least 2 players.');
+            return;
+        }
+        if (currentGameType === 'avalon' && pCount < 5) {
+            showAlert('Not Enough Players', 'Avalon requires at least 5 players.');
+            return;
+        }
+        if (currentGameType === 'wheel' && pCount < 2) {
+            showAlert('Not Enough Players', 'Spin The Wheel requires at least 2 players.');
+            return;
+        }
+
         if (currentGameType === 'wheel') {
             await initWheelGame(currentPlayer.roomCode);
         } else if (currentGameType === 'avalon') {
