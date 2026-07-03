@@ -630,7 +630,7 @@ function renderGameOver(state, isHost, players) {
         rolesHtml += `</div></div>`;
     }
 
-    let hostControls = isHost ? `<button id="btnRestartAvalon" class="btn secondary full-width mt-20">🔄 Play Again</button>` : '';
+    let hostControls = '';
 
     return `
         <div class="glass text-center" style="border:3px solid ${winColor}; background:${winBg};">
@@ -816,6 +816,6 @@ function attachEventListeners(state, players, myId, isHost) {
     }
 
     // Restart
-    const btnRestartAvalon = document.getElementById('btnRestartAvalon');
-    if (btnRestartAvalon) btnRestartAvalon.onclick = resetAvalonGame;
+    const restartAvalonBtn = document.getElementById('restartAvalonBtn');
+    if (restartAvalonBtn) restartAvalonBtn.onclick = resetAvalonGame;
 }

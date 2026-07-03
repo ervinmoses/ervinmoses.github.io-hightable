@@ -160,7 +160,10 @@
     <div id="game" class="view">
         <div class="game-header">
             <span class="room-indicator">Room: <span id="gameRoomCode"></span></span>
-            <button id="leaveGameBtn" class="btn sm danger">Leave</button>
+            <div style="display: flex; gap: 10px;">
+                <button id="restartGameBtn" class="btn sm secondary hidden">Restart</button>
+                <button id="leaveGameBtn" class="btn sm danger">Leave</button>
+            </div>
         </div>
 
         <div class="game-area">
@@ -215,9 +218,6 @@
                 </div>
             </div>
 
-            <button id="restartGameBtn" class="btn secondary hidden"
-                style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 400px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">Restart
-                Game</button>
         </div>
     </div>
 
@@ -225,13 +225,16 @@
     <div id="bigTwoGame" class="view">
         <div class="game-header">
             <span class="room-indicator">Room: <span id="bigTwoRoomCode"></span></span>
-            <button id="leaveBigTwoBtn" class="btn sm danger">Leave</button>
+            <div style="display: flex; gap: 10px;">
+                <button id="restartBigTwoBtn" class="btn sm secondary hidden">Restart</button>
+                <button id="leaveBigTwoBtn" class="btn sm danger">Leave</button>
+            </div>
         </div>
 
         <div class="game-area">
 
-            <div class="poker-table glass text-center mt-10">
-                <h3 style="color: var(--accent-color); margin-bottom: 15px;">The Table</h3>
+            <div class="poker-table glass text-center mt-10" style="position: relative;">
+                <div id="bigTwoPreviousTrick" style="position: absolute; left: 10px; top: 10px; transform: scale(0.6) rotate(-20deg); transform-origin: top left; pointer-events: none; opacity: 0.8; display: flex; gap: -20px;"></div>
                 <div id="bigTwoTablePlayers" class="table-players-layout">
                     <!-- 4 Players dynamically injected -->
                 </div>
@@ -272,9 +275,6 @@
                 </div>
             </div>
 
-            <button id="restartBigTwoBtn" class="btn secondary hidden"
-                style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 400px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">Restart
-                Game</button>
         </div>
     </div>
 
@@ -282,7 +282,10 @@
     <div id="wheelGame" class="view">
         <div class="game-header">
             <span class="room-indicator">Room: <span id="wheelRoomCode"></span></span>
-            <button id="leaveWheelBtn" class="btn sm danger">Leave</button>
+            <div style="display: flex; gap: 10px;">
+                <button id="restartWheelBtn" class="btn sm secondary hidden">Restart</button>
+                <button id="leaveWheelBtn" class="btn sm danger">Leave</button>
+            </div>
         </div>
 
         <div class="game-area">
@@ -306,7 +309,6 @@
                 <div id="wheelHostControls" class="hidden host-panel glass mt-20">
                     <button id="spinBtn" class="btn primary full-width" style="font-size: 1.2rem; padding: 15px;">SPIN
                         THE WHEEL!</button>
-                    <button id="restartWheelBtn" class="btn secondary full-width mt-10">Restart Game</button>
                 </div>
             </div>
         </div>
@@ -316,7 +318,10 @@
     <div id="avalonGame" class="view">
         <div class="game-header">
             <span class="room-indicator">Room: <span id="avalonRoomCode"></span></span>
-            <button id="leaveAvalonBtn" class="btn sm danger">Leave</button>
+            <div style="display: flex; gap: 10px;">
+                <button id="restartAvalonBtn" class="btn sm secondary hidden">Restart</button>
+                <button id="leaveAvalonBtn" class="btn sm danger">Leave</button>
+            </div>
         </div>
         <div class="game-area" id="avalonGameArea">
             <!-- Dynamic UI injected by avalon-ui.js based on phase -->

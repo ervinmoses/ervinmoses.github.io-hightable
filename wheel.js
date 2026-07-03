@@ -35,6 +35,12 @@ export function joinWheelListener(roomCode, playerId, hostStatus) {
         wheelHostControls.classList.add('hidden');
     }
     
+    const restartWheelBtn = document.getElementById('restartWheelBtn');
+    if (restartWheelBtn) {
+        if (isHost) restartWheelBtn.classList.remove('hidden');
+        else restartWheelBtn.classList.add('hidden');
+    }
+    
     wheelWinnerDisplay.classList.add('hidden');
 
     // Listen to players to build the wheel

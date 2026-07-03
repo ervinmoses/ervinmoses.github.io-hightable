@@ -65,8 +65,11 @@ function generateDeck() {
             });
         }
     }
+    // Secure random shuffle
+    const array = new Uint32Array(deck.length);
+    window.crypto.getRandomValues(array);
     for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = array[i] % (i + 1);
         [deck[i], deck[j]] = [deck[j], deck[i]];
     }
     return deck;
@@ -118,6 +121,7 @@ export async function initBigTwo(roomCode) {
         turnOrder: playerIds,
         currentTurnIndex: starterIndex,
         currentTrick: null, // { cards: [], playedBy: 'playerId' }
+        previousTrick: null,
         passedPlayers: {},
         status: 'playing',
         winner: null,
@@ -231,6 +235,22 @@ function renderUI(state, players) {
             bigTwoCurrentTrick.appendChild(trickInfo);
         } else {
             bigTwoCurrentTrick.innerHTML = '<span style="color:#666;">No cards played yet.</span>';
+        }
+    }
+
+    // 2.5 Render Previous Trick
+    const bigTwoPreviousTrick = document.getElementById('bigTwoPreviousTrick');
+    if (bigTwoPreviousTrick) {
+        bigTwoPreviousTrick.innerHTML = '';
+        if (state.previousTrick && state.previousTrick.cards) {
+            state.previousTrick.cards.forEach(card => {
+                const cardEl = document.createElement('div');
+                const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
+                cardEl.className = `playing-card big-two-card ${redClass}`;
+                cardEl.setAttribute('data-value', card.value);
+                cardEl.setAttribute('data-suit', getSuitSymbol(card.suit));
+                bigTwoPreviousTrick.appendChild(cardEl);
+            });
         }
     }
 
@@ -356,6 +376,11 @@ function getCombination(cards) {
             return { type: 'triple', value: cards[0].rank };
         }
     }
+    if (len === 4) {
+        if (cards[0].rank === cards[1].rank && cards[1].rank === cards[2].rank && cards[2].rank === cards[3].rank) {
+            return { type: 'four_kind_4', value: cards[0].rank };
+        }
+    }
     if (len === 5) {
         // Sort for 5-card eval
         let sorted = [...cards].sort((a, b) => a.rank - b.rank);
@@ -460,6 +485,13 @@ if (bigTwoHitBtn) {
             cards: selectedObj,
             playedBy: myId
         };
+        
+        let newPreviousTrick = lastKnownState.previousTrick;
+        if (lastKnownState.currentTrick && lastKnownState.currentTrick.playedBy !== myId) {
+            newPreviousTrick = lastKnownState.currentTrick;
+        } else if (!lastKnownState.currentTrick) {
+            newPreviousTrick = null;
+        }
 
         // 3. Clear passes, everyone can play again
         let newPassed = {};
@@ -470,6 +502,7 @@ if (bigTwoHitBtn) {
             await update(ref(db, `rooms/${currentRoom}/gameState`), {
                 [`hands/${myId}`]: newHand,
                 currentTrick: newTrick,
+                previousTrick: newPreviousTrick,
                 passedPlayers: newPassed,
                 status: 'game_over',
                 winnerName: lastKnownPlayers[myId].name,
@@ -482,6 +515,7 @@ if (bigTwoHitBtn) {
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
             [`hands/${myId}`]: newHand,
             currentTrick: newTrick,
+            previousTrick: newPreviousTrick,
             passedPlayers: newPassed,
             firstPlay: false
         });
@@ -508,6 +542,7 @@ if (bigTwoOpenNewBtn) {
         
         // Clear trick and allow current player to play anything
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
+            previousTrick: lastKnownState.currentTrick,
             currentTrick: null,
             passedPlayers: {}
         });

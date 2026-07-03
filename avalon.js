@@ -50,6 +50,12 @@ export function joinAvalonListener(roomCode, playerId, hostStatus) {
     // Show Avalon UI (will map this inside app.js/index.html UI updates)
     document.getElementById('avalonGame').classList.remove('hidden');
 
+    const restartBtn = document.getElementById('restartAvalonBtn');
+    if (restartBtn) {
+        if (isHost) restartBtn.classList.remove('hidden');
+        else restartBtn.classList.add('hidden');
+    }
+
     const stateRef = ref(db, `rooms/${roomCode}/avalonState`);
     const listener = onValue(stateRef, async (snapshot) => {
         const state = snapshot.val();
