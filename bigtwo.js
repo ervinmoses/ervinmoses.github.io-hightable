@@ -57,9 +57,9 @@ function generateDeck() {
     let deck = [];
     for (let suit of SUITS) {
         for (let value of VALUES) {
-            deck.push({ 
-                suit, 
-                value, 
+            deck.push({
+                suit,
+                value,
                 rank: getRank(value),
                 suitRank: getSuitRank(suit)
             });
@@ -84,7 +84,7 @@ export async function initBigTwo(roomCode) {
     const deck = generateDeck();
     const playersSnapshot = await get(ref(db, `rooms/${roomCode}/players`));
     const players = playersSnapshot.val() || {};
-    
+
     const playerIds = Object.keys(players);
     let hands = {};
     playerIds.forEach(id => {
@@ -156,10 +156,10 @@ export function joinBigTwoListener(roomCode, playerId, hostStatus) {
 
         lastKnownState = state;
         lastKnownPlayers = players;
-        
+
         renderUI(state, players);
     });
-    
+
     gameListeners.push({ ref: stateRef, listener });
 }
 
@@ -172,7 +172,7 @@ export function leaveBigTwo() {
     isHost = false;
     selectedCards = [];
     allRevealed = false;
-    
+
     if (bigTwoActionButtonsRow) bigTwoActionButtonsRow.classList.add('hidden');
     if (bigTwoAdjustPositionRow) bigTwoAdjustPositionRow.classList.add('hidden');
     if (restartBigTwoBtn) restartBigTwoBtn.classList.add('hidden');
@@ -196,7 +196,7 @@ function renderUI(state, players) {
             const hand = state.hands && state.hands[id] ? state.hands[id] : [];
             const isPassed = state.passedPlayers && state.passedPlayers[id];
             const isMyTurn = state.status === 'playing' && state.turnOrder[state.currentTurnIndex] === id;
-            
+
             let bgStyle = p.photoUrl ? `background-image: url('${p.photoUrl}'); background-size: cover; background-position: center;` : '';
             let initial = !p.photoUrl ? p.name.charAt(0) : '';
             let borderStyle = isMyTurn ? 'border: 2px solid var(--accent-color); box-shadow: 0 0 10px var(--accent-color);' : '';
@@ -281,7 +281,7 @@ function renderUI(state, players) {
     if (bigTwoMyCardsArea) {
         bigTwoMyCardsArea.innerHTML = '';
         const myHand = state.hands && state.hands[myId] ? state.hands[myId] : [];
-        
+
         myHand.forEach((card, index) => {
             const cardEl = document.createElement('div');
             if (allRevealed) {
@@ -316,7 +316,7 @@ function renderUI(state, players) {
     // 4. Status Row & Controls
     const currentTurnId = state.turnOrder ? state.turnOrder[state.currentTurnIndex] : null;
     const isMyTurn = state.status === 'playing' && currentTurnId === myId;
-    
+
     if (bigTwoStatusRow) {
         if (state.status === 'game_over') {
             bigTwoTurnPlayerName.textContent = state.winnerName ? `${state.winnerName} WINS!` : 'Game Over';
@@ -325,7 +325,7 @@ function renderUI(state, players) {
             bigTwoTurnPlayerName.textContent = isMyTurn ? 'Your Turn' : `${players[currentTurnId].name}'s Turn`;
             const count = state.hands && state.hands[currentTurnId] ? state.hands[currentTurnId].length : 0;
             bigTwoTurnPlayerCards.textContent = `Cards: ${count}`;
-            
+
             if (bigTwoTurnProfilePic) {
                 const p = players[currentTurnId];
                 if (p.photoUrl) {
@@ -345,7 +345,7 @@ function renderUI(state, players) {
     if (bigTwoActionButtonsRow) {
         if (isMyTurn) {
             bigTwoActionButtonsRow.classList.remove('hidden');
-            
+
             // Check trick ownership (if everyone else passed)
             let trickBelongsToMe = false;
             if (state.currentTrick && state.currentTrick.playedBy === myId) {
@@ -410,20 +410,20 @@ function getCombination(cards) {
         let isFlush = cards.every(c => c.suit === cards[0].suit);
         let isStraight = true;
         for (let i = 1; i < 5; i++) {
-            if (sorted[i].rank !== sorted[i-1].rank + 1) {
+            if (sorted[i].rank !== sorted[i - 1].rank + 1) {
                 isStraight = false;
                 break;
             }
         }
-        
+
         // Count frequencies
         let freqs = {};
         cards.forEach(c => freqs[c.rank] = (freqs[c.rank] || 0) + 1);
-        let counts = Object.values(freqs).sort((a,b) => b - a);
+        let counts = Object.values(freqs).sort((a, b) => b - a);
         let mainRank = -1;
-        
+
         if (isStraight && isFlush) return { type: 'straight_flush', value: sorted[4].rank, suit: sorted[4].suitRank };
-        
+
         if (counts[0] === 4) {
             for (let r in freqs) if (freqs[r] === 4) mainRank = parseInt(r);
             return { type: 'four_kind', value: mainRank };
@@ -452,9 +452,9 @@ function canBeat(playCombo, trickCombo) {
         if (FIVE_CARD_RANKS[playCombo.type] && FIVE_CARD_RANKS[trickCombo.type]) {
             return FIVE_CARD_RANKS[playCombo.type] > FIVE_CARD_RANKS[trickCombo.type];
         }
-        return false; 
+        return false;
     }
-    
+
     // Same type
     if (playCombo.value > trickCombo.value) return true;
     if (playCombo.value === trickCombo.value && playCombo.suit !== undefined && trickCombo.suit !== undefined) {
@@ -466,10 +466,10 @@ function canBeat(playCombo, trickCombo) {
 if (bigTwoHitBtn) {
     bigTwoHitBtn.onclick = async () => {
         if (!lastKnownState || selectedCards.length === 0) return;
-        
+
         const myHand = lastKnownState.hands[myId];
         const selectedObj = selectedCards.map(i => myHand[i]);
-        
+
         // Rule 1: Validate combination
         const combo = getCombination(selectedObj);
         if (!combo) {
@@ -502,13 +502,13 @@ if (bigTwoHitBtn) {
         // Valid play! 
         // 1. Remove cards from hand
         let newHand = myHand.filter((_, i) => !selectedCards.includes(i));
-        
+
         // 2. Set current trick
         let newTrick = {
             cards: selectedObj,
             playedBy: myId
         };
-        
+
         let newPreviousTrick = lastKnownState.previousTrick;
         if (lastKnownState.currentTrick && lastKnownState.currentTrick.playedBy !== myId) {
             newPreviousTrick = lastKnownState.currentTrick;
@@ -542,7 +542,7 @@ if (bigTwoHitBtn) {
             passedPlayers: newPassed,
             firstPlay: false
         });
-        
+
         await advanceTurnBigTwo(lastKnownState, newPassed);
     };
 }
@@ -550,10 +550,10 @@ if (bigTwoHitBtn) {
 if (bigTwoPassBtn) {
     bigTwoPassBtn.onclick = async () => {
         if (!lastKnownState) return;
-        
+
         const passed = lastKnownState.passedPlayers || {};
         passed[myId] = true;
-        
+
         await update(ref(db, `rooms/${currentRoom}/gameState/passedPlayers`), passed);
         await advanceTurnBigTwo(lastKnownState, passed);
     };
@@ -562,7 +562,7 @@ if (bigTwoPassBtn) {
 if (bigTwoOpenNewBtn) {
     bigTwoOpenNewBtn.onclick = async () => {
         if (!lastKnownState) return;
-        
+
         // Clear trick and allow current player to play anything
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
             previousTrick: lastKnownState.currentTrick,
@@ -576,7 +576,7 @@ if (bigTwoOpenNewBtn) {
 async function advanceTurnBigTwo(state, currentPassed) {
     let nextIdx = state.currentTurnIndex;
     let found = false;
-    
+
     // Find next player who hasn't passed and hasn't won (0 cards)
     for (let i = 0; i < state.turnOrder.length; i++) {
         nextIdx = (nextIdx + 1) % state.turnOrder.length;
@@ -587,7 +587,7 @@ async function advanceTurnBigTwo(state, currentPassed) {
             break;
         }
     }
-    
+
     if (found) {
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
             currentTurnIndex: nextIdx
@@ -600,7 +600,7 @@ function showGameOver(name, photoUrl) {
     loserAnimNameText.textContent = `${name} WINS!`;
     loserAnimNameText.style.color = 'gold';
     loserAnimReasonSub.textContent = 'They cleared all their cards.';
-    
+
     if (photoUrl) {
         loserAnimProfilePic.style.backgroundImage = `url('${photoUrl}')`;
         loserAnimProfilePic.textContent = '';
@@ -610,7 +610,7 @@ function showGameOver(name, photoUrl) {
         loserAnimProfilePic.style.backgroundImage = 'none';
         loserAnimProfilePic.textContent = name.charAt(0);
     }
-    
+
     loserAnimationOverlay.classList.remove('hidden');
 }
 
@@ -638,7 +638,7 @@ if (bigTwoAdjustPositionBtn) {
 }
 
 function renderAdjustPositionModalBigTwo() {
-    if(!draggablePlayerList) return;
+    if (!draggablePlayerList) return;
     draggablePlayerList.innerHTML = '';
     localTurnOrder.forEach((id, index) => {
         if (!lastKnownPlayers[id]) return;
@@ -666,7 +666,7 @@ function renderAdjustPositionModalBigTwo() {
             }
         };
     });
-    
+
     draggablePlayerList.querySelectorAll('.move-down').forEach(btn => {
         btn.onclick = (e) => {
             const idx = parseInt(e.target.dataset.idx);
@@ -684,17 +684,17 @@ function renderAdjustPositionModalBigTwo() {
 if (saveTurnOrderBtn) {
     saveTurnOrderBtn.addEventListener('click', async () => {
         if (!isHost || !currentRoom) return;
-        
+
         // This button is shared with 21 card game, we need to check if we are in Big Two
         if (document.getElementById('bigTwoGame').classList.contains('active') && lastKnownState) {
             let currentIdx = lastKnownState.currentTurnIndex;
             if (currentIdx >= localTurnOrder.length) currentIdx = 0;
-            
+
             await update(ref(db, `rooms/${currentRoom}/gameState`), {
                 turnOrder: localTurnOrder,
                 currentTurnIndex: currentIdx
             });
-            
+
             if (adjustPositionModal) adjustPositionModal.classList.add('hidden');
         }
     });
