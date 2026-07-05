@@ -159,6 +159,7 @@ avalonBtn.addEventListener('click', () => {
     currentGameType = 'avalon';
     document.getElementById('lobbyTitle').textContent = 'Avalon Lobby';
     switchView('lobby');
+    renderPublicRooms();
 });
 
 export let currentGameType = '21';
@@ -167,18 +168,21 @@ cardGamesBtn.addEventListener('click', () => {
     currentGameType = '21';
     document.getElementById('lobbyTitle').textContent = '21 Lobby';
     switchView('lobby');
+    renderPublicRooms();
 });
 
 bigTwoBtn.addEventListener('click', () => {
     currentGameType = 'bigtwo';
     document.getElementById('lobbyTitle').textContent = 'Big Two Lobby';
     switchView('lobby');
+    renderPublicRooms();
 });
 
 spinWheelBtn.addEventListener('click', () => {
     currentGameType = 'wheel';
     document.getElementById('lobbyTitle').textContent = 'Spin The Wheel Lobby';
     switchView('lobby');
+    renderPublicRooms();
 });
 
 const gameRules = {
@@ -303,11 +307,18 @@ createGameBtn.addEventListener('click', async () => {
 });
 
 // Listen for active rooms globally
+let allRoomsData = null;
+
 onValue(ref(db, 'rooms'), (snapshot) => {
+    allRoomsData = snapshot.val();
+    renderPublicRooms();
+});
+
+function renderPublicRooms() {
     if (!publicRoomsList) return;
 
     publicRoomsList.innerHTML = '';
-    const rooms = snapshot.val();
+    const rooms = allRoomsData;
     let hasActiveRooms = false;
 
     if (rooms) {
@@ -366,7 +377,7 @@ onValue(ref(db, 'rooms'), (snapshot) => {
     if (!hasActiveRooms) {
         publicRoomsList.innerHTML = '<p class="text-center mt-10" style="color: #666;">No active tables found.</p>';
     }
-});
+}
 
 async function joinRoom(roomCode, skipCheck = false) {
     if (!skipCheck) {

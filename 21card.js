@@ -106,6 +106,7 @@ export async function initGame(roomCode) {
 }
 
 export function joinGameListener(roomCode, playerId, hostStatus) {
+    leaveGame(); // Ensure any existing listener is cleaned up before joining anew
     currentRoom = roomCode;
     myId = playerId;
     isHost = hostStatus;
