@@ -522,8 +522,8 @@ startGameBtn.addEventListener('click', async () => {
             showAlert('Not Enough Players', 'Big Two requires at least 2 players.');
             return;
         }
-        if (currentGameType === 'avalon' && pCount < 5) {
-            showAlert('Not Enough Players', 'Avalon requires at least 5 players.');
+        if (currentGameType === 'avalon' && pCount < 1) {
+            showAlert('Not Enough Players', 'Avalon requires at least 1 player.');
             return;
         }
         if (currentGameType === 'wheel' && pCount < 2) {

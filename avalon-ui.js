@@ -1,6 +1,5 @@
 import {
     startAvalonGame,
-    confirmSetupOrder,
     proposeLeader,
     submitTeam,
     submitPublicVote,
@@ -12,7 +11,11 @@ import {
     QUEST_REQUIREMENTS,
     continueQuestResult,
     inspectLotl,
-    finishLotl
+    finishLotl,
+    setPlayerReady,
+    checkAllReady,
+    beginNightPhase,
+    updatePlayerAdjustment
 } from './avalon.js?v=29';
 
 const avalonGameArea = document.getElementById('avalonGameArea');
@@ -81,11 +84,14 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
         case 'setup':
             html += renderSetup(isHost, players);
             break;
+        case 'player_adjustment':
+            html += renderPlayerAdjustment(state, isHost, players, myId);
+            break;
+        case 'countdown':
+            html += renderCountdown(state, isHost);
+            break;
         case 'reveal_roles':
             html += renderRevealRoles(state, isHost, myId);
-            break;
-        case 'setup_order':
-            html += renderSetupOrder(state, isHost, players, myId);
             break;
         case 'night_phase':
             html += renderNightPhase(state, players, myId, isHost);
@@ -95,11 +101,9 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
             break;
         case 'public_voting':
             html += renderPublicVoting(state, players, isHost, myId);
-            if (isHost) checkPublicVotesComplete(state);
             break;
         case 'quest_voting':
             html += renderQuestVoting(state, players, isHost, myId);
-            if (isHost) checkQuestVotesComplete(state);
             break;
         case 'assassination':
             html += renderAssassination(state, players, myId, isHost);
@@ -142,7 +146,7 @@ function renderMiniRoleCard(role) {
 // SCOREBOARD
 // ========================
 function renderScoreboard(state, players) {
-    const playingCount = players ? Object.keys(players).filter(id => !players[id].isHost).length : 0;
+    const playingCount = players ? Object.keys(players).length : 0;
     let qResults = state.questResults || [];
     const currentQuest = state.scores?.currentQuest ?? 0;
 
@@ -221,38 +225,41 @@ function renderSetup(isHost, players) {
 }
 
 // ========================
-// PHASE 1.5: SETUP ORDER (Host Only)
+// PHASE 1.5: PLAYER ADJUSTMENT
 // ========================
-function renderSetupOrder(state, isHost, players, myId) {
-    if (!isHost) {
-        // Players see their roles while host sets up
-        return renderRevealRoles(state, false, myId);
-    }
-    
-    // Host UI
+function renderPlayerAdjustment(state, isHost, players, myId) {
     let pListHTML = '';
     const turnOrder = state.turnOrder || [];
+    
+    // Sort logic for display based on turnOrder
     turnOrder.forEach((id, idx) => {
         const p = players[id];
         if (!p) return;
-        pListHTML += `
-            <div class="draggable-item" data-id="${id}" style="display:flex; justify-content:space-between; align-items:center;">
-                <span><strong style="color:var(--accent-color);">${idx + 1}.</strong> ${p.name}</span>
+        const isReady = state.playerReadyStatus?.[id] || p.isBot;
+        const readyIcon = isReady ? '<span style="color:#4fc3f7">✓ Ready</span>' : '<span style="color:rgba(255,255,255,0.4)">Waiting...</span>';
+        
+        let controls = '';
+        if (isHost) {
+            controls = `
                 <div style="display:flex; gap:5px;">
                     <button class="btn secondary sm order-up" data-idx="${idx}" style="padding:4px 8px;">▲</button>
                     <button class="btn secondary sm order-down" data-idx="${idx}" style="padding:4px 8px;">▼</button>
                 </div>
+            `;
+        }
+
+        pListHTML += `
+            <div class="draggable-item" data-id="${id}" style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
+                <span><strong style="color:var(--accent-color);">${idx + 1}.</strong> ${p.name} ${readyIcon}</span>
+                ${controls}
             </div>
         `;
     });
 
     const lotlOn = state.lotlEnabled ? 'checked' : '';
-    
-    return `
-        <div class="glass text-center">
-            <h2 style="margin-bottom:6px;">⚔ Setup Roles & Order</h2>
-            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Adjust the player order (Leader passes sequentially). Turn on Lady of the Lake if desired.</p>
-            
+    let hostControls = '';
+    if (isHost) {
+        hostControls = `
             <div style="margin:16px 0; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px; text-align:left;">
                 <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
                     <input type="checkbox" id="chkLotl" class="chk-team" ${lotlOn}>
@@ -260,6 +267,24 @@ function renderSetupOrder(state, isHost, players, myId) {
                 </label>
                 <p style="font-size:0.75rem; color:rgba(255,255,255,0.5); margin-top:4px;">When on, the last player receives the Lady of the Lake token to inspect another player's loyalty.</p>
             </div>
+        `;
+    } else {
+        hostControls = state.lotlEnabled 
+            ? `<div style="margin:16px 0; color:#4fc3f7; font-size:0.85rem;">💧 Lady of the Lake is ENABLED</div>`
+            : `<div style="margin:16px 0; color:rgba(255,255,255,0.5); font-size:0.85rem;">💧 Lady of the Lake is DISABLED</div>`;
+    }
+    
+    const myReady = state.playerReadyStatus?.[myId];
+    const readyBtn = myReady
+        ? `<button class="btn secondary full-width mt-10" disabled>Waiting for others...</button>`
+        : `<button id="btnPlayerReady" class="btn primary full-width mt-10">I am Ready</button>`;
+
+    return `
+        <div class="glass text-center">
+            <h2 style="margin-bottom:6px;">⚔ Setup Roles & Order</h2>
+            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">${isHost ? 'Adjust the player order (Leader passes sequentially).' : 'Host is preparing the game...'}</p>
+            
+            ${hostControls}
             
             <div style="margin:16px 0; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px;">
                 <h4 style="color:var(--accent-color); margin-bottom:10px;">Player Turn Order</h4>
@@ -268,45 +293,74 @@ function renderSetupOrder(state, isHost, players, myId) {
                 </div>
             </div>
             
-            <button id="btnConfirmSetup" class="btn primary full-width mt-10">Next: Begin Night Phase 🌙</button>
+            ${readyBtn}
         </div>`;
+}
+
+// ========================
+// PHASE 1.8: COUNTDOWN
+// ========================
+function renderCountdown(state, isHost) {
+    const duration = Math.ceil(((state.countdownEndTime || Date.now()) - Date.now()) / 1000);
+    
+    currentInterval = setInterval(() => {
+        const remain = Math.max(1, Math.ceil(((state.countdownEndTime || Date.now()) - Date.now()) / 1000));
+        const el = document.getElementById('avalonCountdown');
+        if (el) el.textContent = remain;
+    }, 200);
+
+    return `
+        <div class="glass text-center" style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:400px; background:#000;">
+            <h2 style="color:#fff; margin-bottom:20px;">Get Ready!</h2>
+            <div id="avalonCountdown" style="font-size:6rem; font-weight:bold; color:var(--accent-color);">${Math.max(1, duration)}</div>
+        </div>
+    `;
 }
 
 // ========================
 // PHASE 2: REVEAL ROLES
 // ========================
 function renderRevealRoles(state, isHost, myId) {
-    if (isHost) return ''; // Host does not see roles
-
     const myRole = state.roles?.[myId];
     if (!myRole) return `<div class="glass text-center"><p>Loading your role...</p></div>`;
 
     const isGood = GOOD_ROLES.includes(myRole);
-    const teamColor = isGood ? '#4fc3f7' : '#ef5350';
+    // Use very dark monochrome colors to avoid light leaking when playing in dark
+    const teamColor = isGood ? '#1c3d5a' : '#4a1515';
+    const textHighlight = isGood ? '#63b3ed' : '#f56565';
     const teamLabel = isGood ? '🛡 Good Team' : '⚔ Evil Team';
     const desc = ROLE_DESC[myRole] || '';
 
+    // Next phase is night phase. We'll add a button here for host to advance, or anyone if host is a player
+    let advanceBtn = '';
+    if (isHost) {
+        advanceBtn = `<button id="btnBeginNightPhase" class="btn primary full-width mt-20" style="background:#222; border-color:#444;">Host: Begin Night Phase</button>`;
+    }
+
     return `
-        <div class="glass text-center">
-            <h2>🌙 Your Role</h2>
-            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Keep this secret! <strong>Tap and hold</strong> the card to reveal.</p>
-            <div id="roleCardContainer" class="avalon-flip-container">
+        <div class="glass text-center" style="background-color: #000; border: none; min-height: 80vh;">
+            <h2 style="color: #444;">🌙 Your Role</h2>
+            <p style="color:rgba(255,255,255,0.2); font-size:0.85rem;">Keep this secret! <strong>Tap and hold</strong> the card to reveal.</p>
+            <div id="roleCardContainer" class="avalon-flip-container" style="filter: brightness(0.7);">
                 <div class="avalon-flip-inner">
-                    <div class="avalon-flip-front">
+                    <div class="avalon-flip-front" style="background: #050505; border: 1px solid #222; color: #333;">
                         ?
-                        <span style="font-size:0.7rem; color:rgba(255,255,255,0.3); margin-top:8px;">TAP & HOLD TO REVEAL</span>
+                        <span style="font-size:0.7rem; color:rgba(255,255,255,0.1); margin-top:8px;">TAP & HOLD</span>
                     </div>
-                    <div class="avalon-flip-back">
-                        <img src="${getAsset(myRole)}" style="width:100%; height:100%; object-fit:cover; border-radius: 12px;" alt="${myRole}">
+                    <div class="avalon-flip-back" style="background: ${teamColor}; border: 1px solid #111;">
+                        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%;">
+                            <h3 style="color:${textHighlight}; font-size:1.5rem; margin:0;">${ROLE_LABEL[myRole]}</h3>
+                            <img src="${getAsset(myRole)}" style="width:80%; margin-top:10px; border-radius: 8px; filter: grayscale(50%) brightness(0.6);" alt="${myRole}">
+                        </div>
                     </div>
                 </div>
             </div>
-            <div id="roleDescPanel" class="hidden" style="transition: opacity 0.3s; margin-top:14px; padding:14px 16px; background:rgba(0,0,0,0.55); border-radius:10px; border:1px solid ${teamColor}40; text-align:left;">
-                <p style="color:${teamColor}; font-weight:bold; font-size:0.85rem; margin-bottom:6px;">${ROLE_LABEL[myRole]} — ${teamLabel}</p>
-                <p style="color:rgba(255,255,255,0.75); font-size:0.82rem; line-height:1.5; margin:0;">${desc}</p>
+            <div id="roleDescPanel" class="hidden" style="transition: opacity 0.3s; margin-top:14px; padding:14px 16px; background:#050505; border-radius:10px; border:1px solid #222; text-align:left;">
+                <p style="color:${textHighlight}; font-weight:bold; font-size:0.85rem; margin-bottom:6px;">${ROLE_LABEL[myRole]} — ${teamLabel}</p>
+                <p style="color:rgba(255,255,255,0.4); font-size:0.82rem; line-height:1.5; margin:0;">${desc}</p>
             </div>
-            <p id="roleHoldHint" style="color:rgba(255,255,255,0.35); font-size:0.75rem; margin-top:10px;">Hold card to see role &amp; description</p>
-            <p style="color:rgba(255,255,255,0.25); font-size:0.7rem; margin-top:4px;">Wait for Host to begin Night Phase</p>
+            <p id="roleHoldHint" style="color:rgba(255,255,255,0.2); font-size:0.75rem; margin-top:10px;">Hold card to see role &amp; description</p>
+            ${advanceBtn}
         </div>`;
 }
 
@@ -393,7 +447,7 @@ function renderNightPhase(state, players, myId, isHost) {
 // ========================
 function renderTeamBuilding(state, players, isHost, myId) {
     const leaderId = state.roundLeader;
-    const playingCount = Object.keys(players).filter(id => !players[id].isHost).length;
+    const playingCount = Object.keys(players).length;
     const req = (QUEST_REQUIREMENTS[playingCount] || [])[state.scores?.currentQuest ?? 0] || '?';
     const questNum = (state.scores?.currentQuest ?? 0) + 1;
 
@@ -434,7 +488,7 @@ function renderTeamBuilding(state, players, isHost, myId) {
         if (!isHost && myId === leaderId) {
             // Leader sees the checkbox selection
             let chks = Object.keys(players)
-                .filter(id => !players[id].isHost)
+                .filter(id => !players[id].isBot)
                 .map(id => {
                     const alreadySelected = proposedTeam.includes(id);
                     return `
@@ -478,7 +532,7 @@ function renderPublicVoting(state, players, isHost, myId) {
     const hasVoted = state.publicVotes?.[myId];
     const proposedTeam = Array.isArray(state.proposedTeam) ? state.proposedTeam : [];
     const totalVotes = Object.keys(state.publicVotes || {}).length;
-    const playingCount = Object.keys(players).filter(id => !players[id].isHost).length;
+    const playingCount = Object.keys(players).length;
 
     let teamHtml = proposedTeam.map(id =>
         `<div style="background:rgba(79,195,247,0.15); border:1px solid rgba(79,195,247,0.4); border-radius:8px; padding:8px 14px; margin:4px; display:inline-block; font-size:0.9rem;">👤 ${players[id]?.name || id}</div>`
@@ -628,7 +682,7 @@ function renderAssassination(state, players, myId, isHost) {
     if (myRole === 'assassin') {
         // Only show good-team players (exclude known evils)
         let opts = Object.keys(players)
-            .filter(id => !players[id].isHost && id !== myId && GOOD_ROLES.includes(state.roles?.[id]))
+            .filter(id => !players[id].isBot && id !== myId && GOOD_ROLES.includes(state.roles?.[id]))
             .map(id => `<option value="${id}">${players[id].name}</option>`).join('');
 
         return `
@@ -723,7 +777,7 @@ function renderLotlPhase(state, players, isHost, myId) {
         } else {
             // Select someone
             let chks = Object.keys(players)
-                .filter(id => !players[id].isHost && id !== holder)
+                .filter(id => !players[id].isBot && id !== holder)
                 .map(id => `
                     <label class="avalon-badge" style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
                         <input type="radio" name="lotlTarget" class="chk-team hidden" value="${id}">
@@ -814,19 +868,29 @@ function attachEventListeners(state, players, myId, isHost) {
         }, { passive: true });
     }
 
-    // Night phase trigger
-    // Setup Order Logic
-    const btnConfirmSetup = document.getElementById('btnConfirmSetup');
-    if (btnConfirmSetup) {
-        btnConfirmSetup.onclick = () => {
-            const lotlEnabled = document.getElementById('chkLotl')?.checked || false;
+    const btnPlayerReady = document.getElementById('btnPlayerReady');
+    if (btnPlayerReady) {
+        btnPlayerReady.onclick = () => {
+            setPlayerReady(true);
+            if (isHost) checkAllReady(state, players);
+        };
+    }
+
+    const btnBeginNightPhase = document.getElementById('btnBeginNightPhase');
+    if (btnBeginNightPhase) {
+        btnBeginNightPhase.onclick = () => beginNightPhase();
+    }
+
+    const chkLotl = document.getElementById('chkLotl');
+    if (chkLotl && isHost) {
+        chkLotl.onchange = () => {
             const turnOrder = Array.from(document.querySelectorAll('#avalonSortableList .draggable-item')).map(el => el.getAttribute('data-id'));
-            confirmSetupOrder(lotlEnabled, turnOrder);
+            updatePlayerAdjustment(turnOrder, chkLotl.checked);
         };
     }
 
     const sortableList = document.getElementById('avalonSortableList');
-    if (sortableList) {
+    if (sortableList && isHost) {
         sortableList.querySelectorAll('.order-up').forEach(btn => {
             btn.onclick = (e) => {
                 const item = e.target.closest('.draggable-item');
@@ -834,6 +898,9 @@ function attachEventListeners(state, players, myId, isHost) {
                 if (prev) {
                     sortableList.insertBefore(item, prev);
                     reindexList(sortableList);
+                    const turnOrder = Array.from(sortableList.querySelectorAll('.draggable-item')).map(el => el.getAttribute('data-id'));
+                    const lotlEnabled = document.getElementById('chkLotl')?.checked || false;
+                    updatePlayerAdjustment(turnOrder, lotlEnabled);
                 }
             };
         });
@@ -844,6 +911,9 @@ function attachEventListeners(state, players, myId, isHost) {
                 if (next) {
                     sortableList.insertBefore(next, item);
                     reindexList(sortableList);
+                    const turnOrder = Array.from(sortableList.querySelectorAll('.draggable-item')).map(el => el.getAttribute('data-id'));
+                    const lotlEnabled = document.getElementById('chkLotl')?.checked || false;
+                    updatePlayerAdjustment(turnOrder, lotlEnabled);
                 }
             };
         });
@@ -867,7 +937,7 @@ function attachEventListeners(state, players, myId, isHost) {
     }
 
     // Team checkbox logic — dynamic disable when max reached
-    const playingCount = Object.keys(players).filter(id => !players[id].isHost).length;
+    const playingCount = Object.keys(players).length;
     const req = (QUEST_REQUIREMENTS[playingCount] || [])[state.scores?.currentQuest ?? 0] || 0;
     const checkboxContainer = document.getElementById('teamCheckboxes');
     const selCountEl = document.getElementById('selCount');
