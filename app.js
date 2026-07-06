@@ -116,7 +116,7 @@ function checkRegistration() {
         const savedName = localStorage.getItem('playerName');
         const savedId = localStorage.getItem('playerId');
         const savedPhoto = localStorage.getItem('playerPhoto') || '';
-        
+
         if (savedName && savedId) {
             currentPlayer.name = savedName;
             currentPlayer.id = savedId;
@@ -397,7 +397,7 @@ async function joinRoom(roomCode, skipCheck = false) {
 
         const roomData = snapshot.val();
         currentGameType = roomData.gameType || '21';
-        
+
         const currentPlayers = roomData.players ? Object.keys(roomData.players).length : 0;
         if (currentGameType === 'bigtwo' && currentPlayers >= 4) {
             showAlert('Room Full', 'Big Two tables have a maximum of 4 players.');
@@ -449,7 +449,7 @@ async function joinRoom(roomCode, skipCheck = false) {
         const players = snapshot.val();
         connectedPlayersList.innerHTML = '';
         let count = 0;
-        
+
         if (players) {
             Object.values(players).forEach(p => {
                 if (!p || typeof p !== 'object' || !p.name) return; // Fix for Firebase array parsing bug
