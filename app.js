@@ -158,6 +158,7 @@ backToHomeBtn.addEventListener('click', () => {
 avalonBtn.addEventListener('click', () => {
     currentGameType = 'avalon';
     document.getElementById('lobbyTitle').textContent = 'Avalon Lobby';
+    document.getElementById('lobbySubtitle').textContent = 'Players: 5 - 14';
     switchView('lobby');
     renderPublicRooms();
 });
@@ -167,6 +168,7 @@ export let currentGameType = '21';
 cardGamesBtn.addEventListener('click', () => {
     currentGameType = '21';
     document.getElementById('lobbyTitle').textContent = '21 Lobby';
+    document.getElementById('lobbySubtitle').textContent = 'Players: 2 - 20';
     switchView('lobby');
     renderPublicRooms();
 });
@@ -174,6 +176,7 @@ cardGamesBtn.addEventListener('click', () => {
 bigTwoBtn.addEventListener('click', () => {
     currentGameType = 'bigtwo';
     document.getElementById('lobbyTitle').textContent = 'Big Two Lobby';
+    document.getElementById('lobbySubtitle').textContent = 'Players: 2 - 4';
     switchView('lobby');
     renderPublicRooms();
 });
@@ -181,6 +184,7 @@ bigTwoBtn.addEventListener('click', () => {
 spinWheelBtn.addEventListener('click', () => {
     currentGameType = 'wheel';
     document.getElementById('lobbyTitle').textContent = 'Spin The Wheel Lobby';
+    document.getElementById('lobbySubtitle').textContent = 'Players: Any';
     switchView('lobby');
     renderPublicRooms();
 });

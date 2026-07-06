@@ -136,7 +136,11 @@
     <div id="lobby" class="view with-nav">
         <header class="header">
             <button class="back-btn" id="backToHomeBtn">←</button>
-            <h2 id="lobbyTitle">Lobby</h2>
+            <div style="flex-grow: 1; text-align: center;">
+                <h2 id="lobbyTitle" style="margin-bottom: 5px;">Lobby</h2>
+                <p id="lobbySubtitle" style="margin: 0; font-size: 0.9rem; color: #aaa;"></p>
+            </div>
+            <div style="width: 30px;"></div> <!-- Spacer for balance -->
         </header>
         <div class="lobby-actions">
             <button id="createGameBtn" class="btn primary">Create Host Game</button>
@@ -181,6 +185,12 @@
             <!-- Row 3: Cards Area -->
             <div id="cardsAreaRow" class="cards-area-row glass mt-10 text-center">
                 <h3 id="deathmatchTitle" class="text-danger hidden mb-10" style="letter-spacing: 2px;">DEATHMATCH</h3>
+                
+                <div id="cardTotalProgressBarContainer" style="width: 80%; margin: 0 auto 15px auto; height: 10px; background: rgba(0,0,0,0.3); border-radius: 5px; overflow: hidden; position: relative;">
+                    <div id="cardTotalProgressBar" style="width: 0%; height: 100%; background: #ff3b30; transition: width 0.3s, background 0.3s;"></div>
+                    <div style="position: absolute; width: 100%; top: -2px; left: 0; text-align: center; font-size: 0.7rem; color: #fff; font-weight: bold; pointer-events: none;" id="cardTotalProgressText">0 / 21</div>
+                </div>
+
                 <div id="myCardsArea" class="cards-container" style="justify-content: center; min-height: 120px;">
                     <!-- Cards injected here -->
                 </div>
@@ -684,10 +694,10 @@
 
     <div id="loserAnimationOverlay" class="massive-alert hidden" style="flex-direction: column;">
         <div id="loserAnimProfilePic" class="profile-circle"
-            style="width: 120px; height: 120px; border-width: 4px; border-color: #ff3b30; margin-bottom: 20px; font-size: 3rem; background-color: #333;">
+            style="width: 120px; height: 120px; border-width: 2px; border-color: var(--accent-color); margin-bottom: 20px; font-size: 3rem; background-color: #222; box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);">
         </div>
         <div class="alert-content text-center">
-            <h1 id="loserAnimNameText" style="color: #ff3b30; font-size: 3rem; word-break: break-word;">PLAYER LOST</h1>
+            <h1 id="loserAnimNameText" style="color: #fff; font-size: 3rem; word-break: break-word; letter-spacing: 2px;">PLAYER LOST</h1>
             <p id="loserAnimReasonSub" style="font-size: 1.2rem;">Lost Deathmatch.</p>
             <button id="closeLoserAnimBtn" class="btn primary mt-20">Continue</button>
         </div>
@@ -699,6 +709,7 @@
             <ul id="draggablePlayerList" class="draggable-list mt-10">
                 <!-- Draggable items injected here -->
             </ul>
+            <button id="shuffleTurnOrderBtn" class="btn secondary full-width mt-10" style="background-color: #555;">🔀 Shuffle Order</button>
             <button id="saveTurnOrderBtn" class="btn primary full-width mt-10">Save Order</button>
             <button id="cancelTurnOrderBtn" class="btn secondary full-width mt-10">Cancel</button>
         </div>

@@ -62,15 +62,18 @@ const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'
 
 function getCardNumericValue(valueStr) {
     if (['J', 'Q', 'K'].includes(valueStr)) return 10;
-    if (valueStr === 'A') return 11; 
+    if (valueStr === 'A') return 11;
     return parseInt(valueStr);
 }
 
-function generateDeck() {
+function generateDeck(playerCount = 1) {
     let deck = [];
-    for (let suit of SUITS) {
-        for (let value of VALUES) {
-            deck.push({ suit, value, numericValue: getCardNumericValue(value) });
+    const numDecks = Math.max(1, Math.ceil((playerCount * 5) / 52));
+    for (let d = 0; d < numDecks; d++) {
+        for (let suit of SUITS) {
+            for (let value of VALUES) {
+                deck.push({ suit, value, numericValue: getCardNumericValue(value) });
+            }
         }
     }
     for (let i = deck.length - 1; i > 0; i--) {
@@ -81,17 +84,17 @@ function generateDeck() {
 }
 
 export async function initGame(roomCode) {
-    const deck = generateDeck();
     const playersSnapshot = await get(ref(db, `rooms/${roomCode}/players`));
     const players = playersSnapshot.val() || {};
-    
+
     const playerIds = Object.keys(players);
-    
+    const deck = generateDeck(playerIds.length);
+
     let gameState = {
         deck: deck,
         hands: {},
-        revealed: {}, 
-        passed: {},   
+        revealed: {},
+        passed: {},
         turnOrder: playerIds,
         currentTurnIndex: 0,
         status: 'playing'
@@ -112,11 +115,11 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
     isHost = hostStatus;
 
     if (isHost) {
-        if(adjustPositionRow) adjustPositionRow.classList.remove('hidden');
-        if(restartGameBtn) restartGameBtn.classList.remove('hidden');
+        if (adjustPositionRow) adjustPositionRow.classList.remove('hidden');
+        if (restartGameBtn) restartGameBtn.classList.remove('hidden');
     } else {
-        if(adjustPositionRow) adjustPositionRow.classList.add('hidden');
-        if(restartGameBtn) restartGameBtn.classList.add('hidden');
+        if (adjustPositionRow) adjustPositionRow.classList.add('hidden');
+        if (restartGameBtn) restartGameBtn.classList.add('hidden');
     }
 
     const stateRef = ref(db, `rooms/${roomCode}/gameState`);
@@ -129,9 +132,9 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
 
         lastKnownState = state;
         lastKnownPlayers = players;
-        
+
         renderUI(state, players);
-        
+
         if (isHost && state.status === 'playing') {
             let allPassed = true;
             if (state.turnOrder && state.turnOrder.length > 0) {
@@ -144,7 +147,7 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
             } else {
                 allPassed = false;
             }
-            
+
             if (allPassed && areAllCardsRevealed(state) && !isCalculatingLoser) {
                 isCalculatingLoser = true;
                 calculateLoser(state).finally(() => {
@@ -153,7 +156,7 @@ export function joinGameListener(roomCode, playerId, hostStatus) {
             }
         }
     });
-    
+
     gameListeners.push({ ref: stateRef, listener });
 }
 
@@ -164,21 +167,21 @@ export function leaveGame() {
     gameListeners = [];
     currentRoom = null;
     isHost = false;
-    
-    if(actionButtonsRow) actionButtonsRow.classList.add('hidden');
-    if(adjustPositionRow) adjustPositionRow.classList.add('hidden');
-    if(restartGameBtn) restartGameBtn.classList.add('hidden');
-    if(dmHostControlsRow) dmHostControlsRow.classList.add('hidden');
-    if(deathmatchTitle) deathmatchTitle.classList.add('hidden');
-    if(loserAnimationOverlay) loserAnimationOverlay.classList.add('hidden');
+
+    if (actionButtonsRow) actionButtonsRow.classList.add('hidden');
+    if (adjustPositionRow) adjustPositionRow.classList.add('hidden');
+    if (restartGameBtn) restartGameBtn.classList.add('hidden');
+    if (dmHostControlsRow) dmHostControlsRow.classList.add('hidden');
+    if (deathmatchTitle) deathmatchTitle.classList.add('hidden');
+    if (loserAnimationOverlay) loserAnimationOverlay.classList.add('hidden');
 }
 
 function renderUI(state, players) {
-    if(!playerListRow) return;
+    if (!playerListRow) return;
 
     playerListRow.innerHTML = '';
     const me = players[myId];
-    
+
     if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_playing' || state.status === 'deathmatch_revealed') {
         const tiedIds = state.tiedPlayers || [];
         if (tiedIds.includes(myId) && me) {
@@ -189,13 +192,13 @@ function renderUI(state, players) {
                 playerListRow.innerHTML += createPlayerBox(players[id].name, players[id].photoUrl, false);
             }
         });
-        if(statusRow) statusRow.classList.add('hidden');
+        if (statusRow) statusRow.classList.add('hidden');
     } else {
-        if(statusRow) statusRow.classList.remove('hidden');
+        if (statusRow) statusRow.classList.remove('hidden');
         if (me) {
             playerListRow.innerHTML += createPlayerBox('You', me.photoUrl, state.passed && state.passed[myId]);
         }
-        
+
         if (state.turnOrder) {
             state.turnOrder.forEach(id => {
                 if (id !== myId && players[id]) {
@@ -207,28 +210,28 @@ function renderUI(state, players) {
 
     const myHand = state.hands[myId] || [];
     const myRevealed = state.revealed[myId] || [];
-    if(myCardsArea) {
+    if (myCardsArea) {
         myCardsArea.innerHTML = '';
 
         if (state.status === 'deathmatch_setup' || state.status === 'deathmatch_playing' || state.status === 'deathmatch_revealed') {
-            if(deathmatchTitle) deathmatchTitle.classList.remove('hidden');
-            
+            if (deathmatchTitle) deathmatchTitle.classList.remove('hidden');
+
             if (state.dmHands && (state.status === 'deathmatch_playing' || state.status === 'deathmatch_revealed')) {
                 const tiedIds = state.tiedPlayers || [];
                 tiedIds.forEach(id => {
                     const card = state.dmHands[id];
                     const isRevealed = state.dmRevealed && state.dmRevealed[id];
-                    
+
                     const wrapper = document.createElement('div');
                     wrapper.style.display = 'flex';
                     wrapper.style.flexDirection = 'column';
                     wrapper.style.alignItems = 'center';
                     wrapper.style.gap = '5px';
-                    
+
                     const nameLabel = document.createElement('span');
                     nameLabel.textContent = players[id] ? players[id].name : 'Unknown';
                     nameLabel.style.fontSize = '0.8rem';
-                    
+
                     const cardEl = document.createElement('div');
                     if (isRevealed) {
                         const redClass = ['hearts', 'diamonds'].includes(card.suit) ? 'red' : '';
@@ -254,22 +257,22 @@ function renderUI(state, players) {
             }
 
             if (isHost && state.status === 'deathmatch_setup') {
-                if(dmHostControlsRow) dmHostControlsRow.classList.remove('hidden');
+                if (dmHostControlsRow) dmHostControlsRow.classList.remove('hidden');
             } else {
-                if(dmHostControlsRow) dmHostControlsRow.classList.add('hidden');
+                if (dmHostControlsRow) dmHostControlsRow.classList.add('hidden');
             }
-            if(actionButtonsRow) actionButtonsRow.classList.add('hidden');
+            if (actionButtonsRow) actionButtonsRow.classList.add('hidden');
 
             // Auto finalize deathmatch when all revealed
             if (isHost && state.status === 'deathmatch_playing' && state.dmHands && state.dmRevealed) {
                 const allRevealed = Object.keys(state.dmHands).every(id => state.dmRevealed[id]);
                 if (allRevealed) finalizeDeathmatch(state, state.dmCondition);
             }
-            
+
         } else {
-            if(deathmatchTitle) deathmatchTitle.classList.add('hidden');
-            if(dmHostControlsRow) dmHostControlsRow.classList.add('hidden');
-            
+            if (deathmatchTitle) deathmatchTitle.classList.add('hidden');
+            if (dmHostControlsRow) dmHostControlsRow.classList.add('hidden');
+
             myHand.forEach((card, index) => {
                 const isRevealed = myRevealed[index];
                 const cardEl = document.createElement('div');
@@ -283,7 +286,7 @@ function renderUI(state, players) {
                     cardEl.className = `playing-card back`;
                     cardEl.style.cursor = 'pointer';
                 }
-                
+
                 cardEl.onclick = async () => {
                     if (!isRevealed) {
                         const newRevealed = [...myRevealed];
@@ -293,19 +296,33 @@ function renderUI(state, players) {
                 };
                 myCardsArea.appendChild(cardEl);
             });
+
+            // Update Progress Bar
+            const myTotal = calculateTotal(myHand);
+            const progressBar = document.getElementById('cardTotalProgressBar');
+            const progressText = document.getElementById('cardTotalProgressText');
+            if (progressBar && progressText) {
+                let color = '#ff3b30'; // red
+                if (myTotal >= 16 && myTotal <= 21) color = '#34c759'; // green
+
+                let percent = Math.min(100, (myTotal / 21) * 100);
+                progressBar.style.width = `${percent}%`;
+                progressBar.style.background = color;
+                progressText.textContent = `${myTotal} / 21`;
+            }
         }
     }
 
     if (state.turnOrder && state.turnOrder.length > 0 && state.status === 'playing') {
         const currentTurnId = state.turnOrder[state.currentTurnIndex];
         const turnPlayer = players[currentTurnId];
-        
+
         if (turnPlayer) {
-            if(turnPlayerName) turnPlayerName.textContent = currentTurnId === myId ? 'Your Turn' : `${turnPlayer.name}'s Turn`;
+            if (turnPlayerName) turnPlayerName.textContent = currentTurnId === myId ? 'Your Turn' : `${turnPlayer.name}'s Turn`;
             const handLen = state.hands[currentTurnId] ? state.hands[currentTurnId].length : 0;
-            if(turnPlayerCards) turnPlayerCards.textContent = `Cards: ${handLen}`;
-            
-            if(turnProfilePic) {
+            if (turnPlayerCards) turnPlayerCards.textContent = `Cards: ${handLen}`;
+
+            if (turnProfilePic) {
                 if (turnPlayer.photoUrl) {
                     turnProfilePic.style.backgroundImage = `url('${turnPlayer.photoUrl}')`;
                     turnProfilePic.textContent = '';
@@ -321,16 +338,16 @@ function renderUI(state, players) {
 
             // Action buttons (ONLY HOST CAN SEE)
             if (isHost && (!state.passed || !state.passed[currentTurnId])) {
-                if(actionButtonsRow) actionButtonsRow.classList.remove('hidden');
-                if(giveCardBtn) giveCardBtn.disabled = handLen >= 5;
+                if (actionButtonsRow) actionButtonsRow.classList.remove('hidden');
+                if (giveCardBtn) giveCardBtn.disabled = handLen >= 5;
             } else {
-                if(actionButtonsRow) actionButtonsRow.classList.add('hidden');
+                if (actionButtonsRow) actionButtonsRow.classList.add('hidden');
             }
         }
     } else {
-        if(actionButtonsRow) actionButtonsRow.classList.add('hidden');
-        if(turnPlayerName) turnPlayerName.textContent = 'Round Over';
-        if(turnPlayerCards) turnPlayerCards.textContent = '';
+        if (actionButtonsRow) actionButtonsRow.classList.add('hidden');
+        if (turnPlayerName) turnPlayerName.textContent = 'Round Over';
+        if (turnPlayerCards) turnPlayerCards.textContent = '';
     }
 
     if (state.status === 'game_over' && state.loserName) {
@@ -351,7 +368,7 @@ function createPlayerBox(name, photoUrl, isPassed) {
 }
 
 function renderAdjustPositionModal() {
-    if(!draggablePlayerList) return;
+    if (!draggablePlayerList) return;
     draggablePlayerList.innerHTML = '';
     localTurnOrder.forEach((id, index) => {
         if (!lastKnownPlayers[id]) return;
@@ -365,6 +382,29 @@ function renderAdjustPositionModal() {
                 <button class="btn sm secondary move-down" data-idx="${index}">↓</button>
             </div>
         `;
+        li.draggable = true;
+        li.ondragstart = (e) => {
+            e.dataTransfer.setData('text/plain', index);
+            e.dataTransfer.effectAllowed = "move";
+            li.style.opacity = "0.5";
+        };
+        li.ondragend = () => {
+            li.style.opacity = "1";
+        };
+        li.ondragover = (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+        };
+        li.ondrop = (e) => {
+            e.preventDefault();
+            const draggedIdx = parseInt(e.dataTransfer.getData('text/plain'));
+            if (!isNaN(draggedIdx) && draggedIdx !== index) {
+                const tempId = localTurnOrder[draggedIdx];
+                localTurnOrder.splice(draggedIdx, 1);
+                localTurnOrder.splice(index, 0, tempId);
+                renderAdjustPositionModal();
+            }
+        };
         draggablePlayerList.appendChild(li);
     });
 
@@ -379,7 +419,7 @@ function renderAdjustPositionModal() {
             }
         };
     });
-    
+
     draggablePlayerList.querySelectorAll('.move-down').forEach(btn => {
         btn.onclick = (e) => {
             const idx = parseInt(e.target.dataset.idx);
@@ -398,36 +438,48 @@ if (adjustPositionBtn) {
         if (!isHost || !lastKnownState || !lastKnownPlayers) return;
         localTurnOrder = [...lastKnownState.turnOrder];
         renderAdjustPositionModal();
-        if(adjustPositionModal) adjustPositionModal.classList.remove('hidden');
+        if (adjustPositionModal) adjustPositionModal.classList.remove('hidden');
     };
 }
 
 if (cancelTurnOrderBtn) {
     cancelTurnOrderBtn.onclick = () => {
-        if(adjustPositionModal) adjustPositionModal.classList.add('hidden');
+        if (adjustPositionModal) adjustPositionModal.classList.add('hidden');
+    };
+}
+
+const shuffleTurnOrderBtn = document.getElementById('shuffleTurnOrderBtn');
+if (shuffleTurnOrderBtn) {
+    shuffleTurnOrderBtn.onclick = () => {
+        if (!localTurnOrder || localTurnOrder.length <= 1) return;
+        for (let i = localTurnOrder.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [localTurnOrder[i], localTurnOrder[j]] = [localTurnOrder[j], localTurnOrder[i]];
+        }
+        renderAdjustPositionModal();
     };
 }
 
 if (saveTurnOrderBtn) {
     saveTurnOrderBtn.onclick = async () => {
         if (!isHost || !currentRoom) return;
-        
+
         let currentIdx = lastKnownState.currentTurnIndex;
         if (currentIdx >= localTurnOrder.length) currentIdx = 0;
-        
+
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
             turnOrder: localTurnOrder,
             currentTurnIndex: currentIdx
         });
-        
-        if(adjustPositionModal) adjustPositionModal.classList.add('hidden');
+
+        if (adjustPositionModal) adjustPositionModal.classList.add('hidden');
     };
 }
 
 async function advanceTurn(state) {
     let nextIdx = state.currentTurnIndex;
     let found = false;
-    
+
     for (let i = 0; i < state.turnOrder.length; i++) {
         nextIdx = (nextIdx + 1) % state.turnOrder.length;
         const pId = state.turnOrder[nextIdx];
@@ -436,7 +488,7 @@ async function advanceTurn(state) {
             break;
         }
     }
-    
+
     if (found) {
         await set(ref(db, `rooms/${currentRoom}/gameState/currentTurnIndex`), nextIdx);
     }
@@ -454,14 +506,14 @@ async function calculateLoser(state) {
     activePlayers.forEach(id => {
         const hand = state.hands[id] || [];
         const total = calculateTotal(hand);
-        
+
         let distance = 0;
         if (total > 21) {
             distance = total - 21; // Busted
         } else if (total < 16) {
             distance = 16 - total; // Penalty for being too low
         }
-        
+
         if (distance > maxDistance) {
             maxDistance = distance;
             tiedPlayers = [id];
@@ -487,7 +539,7 @@ async function calculateLoser(state) {
     if (tiedPlayers.length === 1) {
         const loser = players[tiedPlayers[0]];
         const reason = maxDistance > 0 ? "Busted or missed safe zone." : "Lowest safe score.";
-        
+
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
             status: 'revealing_loser'
         });
@@ -544,7 +596,7 @@ if (dmBtns) {
             btn.classList.remove('secondary');
             btn.classList.add('primary');
             selectedDmCondition = btn.dataset.cond;
-            if(dealDmCardsBtn) dealDmCardsBtn.classList.remove('hidden');
+            if (dealDmCardsBtn) dealDmCardsBtn.classList.remove('hidden');
         };
     });
 }
@@ -552,11 +604,11 @@ if (dmBtns) {
 if (dealDmCardsBtn) {
     dealDmCardsBtn.onclick = async () => {
         if (!selectedDmCondition || !isHost || !currentRoom) return;
-        
+
         const s = (await get(ref(db, `rooms/${currentRoom}/gameState`))).val();
         let dmHands = {};
         s.tiedPlayers.forEach(id => {
-            dmHands[id] = s.deck.pop(); 
+            dmHands[id] = s.deck.pop();
         });
 
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
@@ -582,7 +634,7 @@ async function finalizeDeathmatch(state, condition) {
     }));
 
     let tiedLosers = [];
-    
+
     if (condition === 'highest') {
         let maxVal = -1;
         dmPlayers.forEach(p => { if (p.card.numericValue > maxVal) maxVal = p.card.numericValue; });
@@ -593,7 +645,7 @@ async function finalizeDeathmatch(state, condition) {
         tiedLosers = dmPlayers.filter(p => p.card.numericValue === minVal);
     } else if (condition === 'middle') {
         if (dmPlayers.length >= 3) {
-            dmPlayers.sort((a,b) => a.card.numericValue - b.card.numericValue);
+            dmPlayers.sort((a, b) => a.card.numericValue - b.card.numericValue);
             const medianVal = dmPlayers[Math.floor(dmPlayers.length / 2)].card.numericValue;
             tiedLosers = dmPlayers.filter(p => p.card.numericValue === medianVal);
         } else {
@@ -610,7 +662,7 @@ async function finalizeDeathmatch(state, condition) {
     } else {
         const loser = tiedLosers[0];
         const reason = `Lost Deathmatch (${condition}) with: ${loser.card.value}`;
-        
+
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
             status: 'deathmatch_revealed'
         });
@@ -630,7 +682,7 @@ function showLoser(name, photoUrl, reason) {
     if (!loserAnimationOverlay) return;
     loserAnimNameText.textContent = name;
     loserAnimReasonSub.textContent = reason;
-    
+
     if (photoUrl) {
         loserAnimProfilePic.style.backgroundImage = `url('${photoUrl}')`;
         loserAnimProfilePic.textContent = '';
@@ -640,7 +692,7 @@ function showLoser(name, photoUrl, reason) {
         loserAnimProfilePic.style.backgroundImage = 'none';
         loserAnimProfilePic.textContent = name.charAt(0);
     }
-    
+
     loserAnimationOverlay.classList.remove('hidden');
 }
 
@@ -660,10 +712,10 @@ if (passBtn) {
     passBtn.onclick = async () => {
         if (!isHost || !lastKnownState) return;
         const currentTurnId = lastKnownState.turnOrder[lastKnownState.currentTurnIndex];
-        
+
         const passed = lastKnownState.passed || {};
         passed[currentTurnId] = true;
-        
+
         await update(ref(db, `rooms/${currentRoom}/gameState/passed`), passed);
         await advanceTurn({ ...lastKnownState, passed });
     };
@@ -673,31 +725,32 @@ if (giveCardBtn) {
     giveCardBtn.onclick = async () => {
         if (!isHost || !lastKnownState) return;
         const currentTurnId = lastKnownState.turnOrder[lastKnownState.currentTurnIndex];
-        
+
         let hand = lastKnownState.hands[currentTurnId] || [];
         if (hand.length >= 5) {
             showAlert('Limit Reached', 'Player cannot draw more than 5 cards.');
             return;
         }
-        
+
         let deck = lastKnownState.deck || [];
         if (deck.length === 0) return;
-        
+
         const newCard = deck.pop();
         hand.push(newCard);
-        
+
         const revealed = lastKnownState.revealed[currentTurnId] || [];
         revealed.push(false);
-        
+
         await update(ref(db, `rooms/${currentRoom}/gameState`), {
             deck: deck,
             [`hands/${currentTurnId}`]: hand,
             [`revealed/${currentTurnId}`]: revealed
         });
-        
+
         // Always advance turn (Round Robin)
-        // If they just hit the 5 card limit, auto-pass them for future rounds
-        if (hand.length >= 5) {
+        // If they just hit the 5 card limit, or their total hit exactly 21, auto-pass them for future rounds
+        const newTotal = calculateTotal(hand);
+        if (hand.length >= 5 || newTotal === 21) {
             const passed = lastKnownState.passed || {};
             passed[currentTurnId] = true;
             await update(ref(db, `rooms/${currentRoom}/gameState/passed`), passed);

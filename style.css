@@ -778,7 +778,8 @@ select {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(180, 0, 0, 0.9);
+    background: rgba(15, 15, 20, 0.95);
+    backdrop-filter: blur(10px);
     display: flex;
     justify-content: center;
     align-items: center;
