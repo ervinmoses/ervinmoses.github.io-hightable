@@ -192,21 +192,22 @@ function renderScoreboard(state, players) {
 // PHASE 1: SETUP
 // ========================
 function renderSetup(isHost, players) {
-    const pCount = Object.values(players).filter(p => !p.isHost).length;
+    const pCount = Object.values(players).length;
     let pList = `<ul style="list-style:none; margin:0; padding:0;">`;
     Object.values(players).forEach(p => {
-        if (!p.isHost) pList += `<li style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.9rem;">👤 ${p.name}</li>`;
+        pList += `<li style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.9rem;">👤 ${p.name} ${p.isHost ? '👑 (Host)' : ''}</li>`;
     });
     pList += `</ul>`;
 
     if (isHost) {
-        const ready = pCount >= 5 && pCount <= 14;
+        // We now allow starting with >= 1 because bots will auto-fill to 5
+        const ready = pCount >= 1 && pCount <= 14;
         return `
             <div class="glass text-center">
                 <h2 style="margin-bottom:6px;">⚔ Avalon Setup</h2>
-                <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Roles auto-assigned by player count. Host does not play.</p>
+                <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Roles auto-assigned. Bots will fill if under 5 players.</p>
                 <div style="margin:16px 0; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px;">
-                    <h4 style="color:${ready ? '#4fc3f7' : '#ef5350'}; margin-bottom:10px;">Players: ${pCount} ${ready ? '✓ Ready' : '(Need 5–14)'}</h4>
+                    <h4 style="color:${ready ? '#4fc3f7' : '#ef5350'}; margin-bottom:10px;">Players: ${pCount} ${ready ? '✓ Ready' : '(Need 1–14)'}</h4>
                     ${pList}
                 </div>
                 <button id="btnStartAvalon" class="btn primary full-width mt-10" ${ready ? '' : 'disabled'}>Start Game →</button>
