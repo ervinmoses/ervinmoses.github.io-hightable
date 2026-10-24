@@ -4,14 +4,14 @@ import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDewCnOF9r2ADMTcnxOBPQ6gR_qgOvV6sc",
-  authDomain: "hightable-games.firebaseapp.com",
-  databaseURL: "https://hightable-games-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "hightable-games",
-  storageBucket: "hightable-games.firebasestorage.app",
-  messagingSenderId: "927858547128",
-  appId: "1:927858547128:web:e6d5f153af37f318a0574d",
-  measurementId: "G-C9BY6MR05P"
+  apiKey: "AIzaSyBtFOHzpDYI0XDiEipIkKO3FAq33C3yNh8",
+  authDomain: "hightable-a2a2e.firebaseapp.com",
+  databaseURL: "https://hightable-a2a2e-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "hightable-a2a2e",
+  storageBucket: "hightable-a2a2e.firebasestorage.app",
+  messagingSenderId: "465460262501",
+  appId: "1:465460262501:web:8f9d1be987c5a8dc32388c",
+  measurementId: "G-WVWVXWPDD8"
 };
 
 // Initialize Firebase

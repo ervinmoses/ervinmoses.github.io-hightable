@@ -1,32 +1,30 @@
-import { db } from './firebase-config.js?v=29';
+import { db } from './firebase-config.js?v=40';
 import { ref, set, onValue, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-import { initGame, joinGameListener, leaveGame } from './21card.js?v=29';
-import { initWheelGame, joinWheelListener, leaveWheelGame } from './wheel.js?v=29';
-import { initAvalon, joinAvalonListener, leaveAvalon } from './avalon.js?v=29';
-import { initBigTwo, joinBigTwoListener, leaveBigTwo } from './bigtwo.js?v=1';
+import { initGame, joinGameListener, leaveGame } from './21card.js?v=40';
+import { initWheelGame, joinWheelListener, leaveWheelGame } from './wheel.js?v=40';
+import { initAvalon, joinAvalonListener, leaveAvalon } from './avalon.js?v=40';
+import { playYourTurnAlert } from './sound.js?v=40';
 
 // ---- DOM Elements ----
 const views = document.querySelectorAll('.view');
-const navHomeBtn = document.getElementById('navHome');
-const navAboutBtn = document.getElementById('navAbout');
-const bottomNav = document.getElementById('bottomNav');
 const customModal = document.getElementById('customModal');
 const modalTitle = document.getElementById('modalTitle');
 const modalBody = document.getElementById('modalBody');
 const modalClose = document.getElementById('modalClose');
 
-// Registration
+// Registration Fallback
 const playerNameInput = document.getElementById('playerNameInput');
 const registerBtn = document.getElementById('registerBtn');
 
 // Home / Lobby
 const cardGamesBtn = document.getElementById('cardGamesBtn');
 const avalonBtn = document.getElementById('avalonBtn');
-const bigTwoBtn = document.getElementById('bigTwoBtn');
 const spinWheelBtn = document.getElementById('spinWheelBtn');
 const createGameBtn = document.getElementById('createGameBtn');
 const publicRoomsList = document.getElementById('publicRoomsList');
 const backToHomeBtn = document.getElementById('backToHomeBtn');
+const quickRoomCodeInput = document.getElementById('quickRoomCodeInput');
+const quickJoinBtn = document.getElementById('quickJoinBtn');
 
 // Active Lobby
 const activeLobby = document.getElementById('activeLobby');
@@ -35,6 +33,14 @@ const connectedPlayersList = document.getElementById('connectedPlayers');
 const playerCount = document.getElementById('playerCount');
 const startGameBtn = document.getElementById('startGameBtn');
 const lobbyActions = document.querySelector('.lobby-actions');
+const roomCodeBadge = document.getElementById('roomCodeBadge');
+
+// Profile Edit Modal
+const topbarPlayerChip = document.getElementById('topbarPlayerChip');
+const editProfileModal = document.getElementById('editProfileModal');
+const editPlayerNameInput = document.getElementById('editPlayerNameInput');
+const saveProfileBtn = document.getElementById('saveProfileBtn');
+const cancelProfileBtn = document.getElementById('cancelProfileBtn');
 
 // Game Room
 const gameRoomCode = document.getElementById('gameRoomCode');
@@ -51,27 +57,41 @@ export let currentPlayer = {
     photoUrl: ''
 };
 
+export let currentGameType = '21';
 export let activeLobbyRef = null;
 export let activeStatusRef = null;
-let startGameLock = false; // prevent double-click on Start Game
+let startGameLock = false;
+
+// ---- Telegram Haptics Helper ----
+export function triggerHaptic(type = 'light') {
+    try {
+        if (window.Telegram?.WebApp?.HapticFeedback) {
+            if (type === 'success' || type === 'error' || type === 'warning') {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred(type);
+            } else {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred(type);
+            }
+        }
+    } catch (e) {}
+}
+
+// ---- Toast Notification ----
+export function showToast(message) {
+    const toast = document.getElementById('toastNotice');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2200);
+}
 
 // ---- View Routing ----
-function switchView(viewId) {
+export function switchView(viewId) {
     views.forEach(v => v.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
-
-    if (viewId === 'home' || viewId === 'lobby' || viewId === 'about') {
-        bottomNav.classList.remove('hidden');
-    } else {
-        bottomNav.classList.add('hidden');
-    }
-
-    if (viewId === 'home' || viewId === 'lobby') {
-        navHomeBtn.classList.add('active');
-        navAboutBtn.classList.remove('active');
-    } else if (viewId === 'about') {
-        navAboutBtn.classList.add('active');
-        navHomeBtn.classList.remove('active');
+    const target = document.getElementById(viewId);
+    if (target) {
+        target.classList.add('active');
     }
 }
 
@@ -80,204 +100,450 @@ export function showAlert(title, message) {
     modalTitle.textContent = title;
     modalBody.innerHTML = message;
     customModal.classList.remove('hidden');
+    triggerHaptic('warning');
 }
 
 modalClose.addEventListener('click', () => {
     customModal.classList.add('hidden');
+    triggerHaptic('light');
 });
 
-// ---- Initialization & Splash ----
-const tg = window.Telegram?.WebApp;
-if (tg) {
-    tg.expand();
-}
-
-switchView('splash-1');
-setTimeout(() => {
-    switchView('splash-2');
-    setTimeout(() => {
-        checkRegistration();
-    }, 4000);
-}, 3000);
-
-function checkRegistration() {
-    const tg = window.Telegram?.WebApp;
-    const tgUser = tg?.initDataUnsafe?.user;
-
-    if (tgUser && tgUser.first_name) {
-        currentPlayer.name = tgUser.first_name;
-        currentPlayer.id = tgUser.id.toString();
-        currentPlayer.photoUrl = tgUser.photo_url || '';
-        localStorage.setItem('playerName', currentPlayer.name);
-        localStorage.setItem('playerId', currentPlayer.id);
-        localStorage.setItem('playerPhoto', currentPlayer.photoUrl);
-        switchView('home');
-    } else {
-        const savedName = localStorage.getItem('playerName');
-        const savedId = localStorage.getItem('playerId');
-        const savedPhoto = localStorage.getItem('playerPhoto') || '';
-
-        if (savedName && savedId) {
-            currentPlayer.name = savedName;
-            currentPlayer.id = savedId;
-            currentPlayer.photoUrl = savedPhoto;
-            switchView('home');
+// ---- Topbar Profile UI ----
+function updatePlayerProfileUI() {
+    const topbarPlayerName = document.getElementById('topbarPlayerName');
+    const topbarAvatar = document.getElementById('topbarAvatar');
+    if (topbarPlayerName) topbarPlayerName.textContent = currentPlayer.name;
+    if (topbarAvatar) {
+        if (currentPlayer.photoUrl) {
+            topbarAvatar.style.backgroundImage = `url('${currentPlayer.photoUrl}')`;
+            topbarAvatar.textContent = '';
         } else {
-            switchView('registration');
+            topbarAvatar.style.backgroundImage = 'none';
+            topbarAvatar.textContent = (currentPlayer.name || 'VIP').substring(0, 2).toUpperCase();
         }
     }
 }
 
-// ---- Registration Handler ----
-registerBtn.addEventListener('click', () => {
-    const name = playerNameInput.value.trim();
-    if (name.length < 2) {
-        showAlert('Error', 'Name must be at least 2 characters.');
-        return;
+// ---- Direct Instant Startup (No 7-Second Wait) ----
+function initAppFlow() {
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.expand();
+        tg.ready();
     }
-    const id = 'user_' + Math.random().toString(36).substr(2, 9);
-    currentPlayer.name = name;
-    currentPlayer.id = id;
-    currentPlayer.photoUrl = '';
-    localStorage.setItem('playerName', name);
-    localStorage.setItem('playerId', id);
-    localStorage.setItem('playerPhoto', '');
+
+    const tgUser = tg?.initDataUnsafe?.user;
+
+    if (tgUser && tgUser.first_name) {
+        currentPlayer.name = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+        currentPlayer.id = tgUser.id.toString();
+        currentPlayer.photoUrl = tgUser.photo_url || '';
+    } else {
+        const savedName = localStorage.getItem('playerName');
+        const savedId = localStorage.getItem('playerId');
+        const savedPhoto = localStorage.getItem('playerPhoto') || '';
+        
+        if (savedName && savedId) {
+            currentPlayer.name = savedName;
+            currentPlayer.id = savedId;
+            currentPlayer.photoUrl = savedPhoto;
+        } else {
+            const guestNum = Math.floor(1000 + Math.random() * 9000);
+            currentPlayer.name = `Player_${guestNum}`;
+            currentPlayer.id = 'user_' + Math.random().toString(36).substr(2, 9);
+            currentPlayer.photoUrl = '';
+        }
+    }
+
+    localStorage.setItem('playerName', currentPlayer.name);
+    localStorage.setItem('playerId', currentPlayer.id);
+    localStorage.setItem('playerPhoto', currentPlayer.photoUrl);
+
+    updatePlayerProfileUI();
+    // Directly go to main page instantly!
     switchView('home');
-});
+}
+
+// Run immediately
+initAppFlow();
+
+// ---- Profile Customization Modal Handlers ----
+if (topbarPlayerChip && editProfileModal) {
+    topbarPlayerChip.addEventListener('click', () => {
+        triggerHaptic('light');
+        editPlayerNameInput.value = currentPlayer.name;
+        editProfileModal.classList.remove('hidden');
+        editPlayerNameInput.focus();
+    });
+
+    cancelProfileBtn.addEventListener('click', () => {
+        triggerHaptic('light');
+        editProfileModal.classList.add('hidden');
+    });
+
+    saveProfileBtn.addEventListener('click', async () => {
+        const newName = editPlayerNameInput.value.trim();
+        if (newName.length < 2) {
+            showAlert('Name too short', 'Player name must be at least 2 characters.');
+            return;
+        }
+        currentPlayer.name = newName;
+        localStorage.setItem('playerName', newName);
+        updatePlayerProfileUI();
+        editProfileModal.classList.add('hidden');
+        showToast(`Profile name updated: ${newName}`);
+        triggerHaptic('success');
+
+        if (currentPlayer.roomCode) {
+            try {
+                await update(ref(db, `rooms/${currentPlayer.roomCode}/players/${currentPlayer.id}`), {
+                    name: newName
+                });
+            } catch (e) {}
+        }
+    });
+}
+
+// ---- Copy Room Code on Tap ----
+if (roomCodeBadge) {
+    roomCodeBadge.addEventListener('click', () => {
+        const code = displayRoomCode.textContent;
+        if (code && code !== '----') {
+            navigator.clipboard.writeText(code).then(() => {
+                showToast(`Table code #${code} copied!`);
+                triggerHaptic('success');
+            }).catch(() => {
+                showToast(`Table code: ${code}`);
+            });
+        }
+    });
+}
+
+// ---- Direct Quick Code Join ----
+if (quickJoinBtn && quickRoomCodeInput) {
+    const handleQuickJoin = () => {
+        const code = quickRoomCodeInput.value.trim().toUpperCase();
+        if (code.length < 3) {
+            showAlert('Invalid Code', 'Please enter a valid table code (e.g. 8492).');
+            return;
+        }
+        if (currentPlayer.roomCode) {
+            showAlert('Already in a room', 'Leave your current table before joining another.');
+            return;
+        }
+        triggerHaptic('medium');
+        currentPlayer.isHost = false;
+        currentPlayer.roomCode = code;
+        joinRoom(code);
+    };
+
+    quickJoinBtn.addEventListener('click', handleQuickJoin);
+    quickRoomCodeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleQuickJoin();
+    });
+}
+
+// ---- Registration Fallback Handler ----
+if (registerBtn && playerNameInput) {
+    registerBtn.addEventListener('click', () => {
+        const name = playerNameInput.value.trim();
+        if (name.length < 2) {
+            showAlert('Error', 'Name must be at least 2 characters.');
+            return;
+        }
+        const id = 'user_' + Math.random().toString(36).substr(2, 9);
+        currentPlayer.name = name;
+        currentPlayer.id = id;
+        currentPlayer.photoUrl = '';
+        localStorage.setItem('playerName', name);
+        localStorage.setItem('playerId', id);
+        localStorage.setItem('playerPhoto', '');
+        updatePlayerProfileUI();
+        switchView('home');
+        triggerHaptic('success');
+    });
+}
 
 // ---- Navigation ----
-navHomeBtn.addEventListener('click', () => switchView('home'));
-navAboutBtn.addEventListener('click', () => switchView('about'));
 backToHomeBtn.addEventListener('click', () => {
+    triggerHaptic('light');
     if (currentPlayer.roomCode) {
         leaveRoom();
     }
     switchView('home');
 });
 
+// Game selection cards
 avalonBtn.addEventListener('click', () => {
+    triggerHaptic('light');
     currentGameType = 'avalon';
-    document.getElementById('lobbyTitle').textContent = 'Avalon Lobby';
-    document.getElementById('lobbySubtitle').textContent = 'Players: 5 - 14';
+    document.getElementById('lobbyTitle').textContent = 'Avalon Table';
     switchView('lobby');
-    renderPublicRooms();
 });
-
-export let currentGameType = '21';
 
 cardGamesBtn.addEventListener('click', () => {
+    triggerHaptic('light');
     currentGameType = '21';
-    document.getElementById('lobbyTitle').textContent = '21 Lobby';
-    document.getElementById('lobbySubtitle').textContent = 'Players: 2 - 20';
+    document.getElementById('lobbyTitle').textContent = '21 Card Table';
     switchView('lobby');
-    renderPublicRooms();
-});
-
-bigTwoBtn.addEventListener('click', () => {
-    currentGameType = 'bigtwo';
-    document.getElementById('lobbyTitle').textContent = 'Big Two Lobby';
-    document.getElementById('lobbySubtitle').textContent = 'Players: 2 - 4';
-    switchView('lobby');
-    renderPublicRooms();
 });
 
 spinWheelBtn.addEventListener('click', () => {
+    triggerHaptic('light');
     currentGameType = 'wheel';
-    document.getElementById('lobbyTitle').textContent = 'Spin The Wheel Lobby';
-    document.getElementById('lobbySubtitle').textContent = 'Players: Any';
+    document.getElementById('lobbyTitle').textContent = 'VIP Roulette Royale';
     switchView('lobby');
-    renderPublicRooms();
 });
 
+// Game Rules Content - Rich Visual Instructions
 const gameRules = {
     '21': `
-<div class="premium-rules">
-    <p><span class="highlight">Goal:</span> Survive without busting over 21.</p>
-    <ul class="premium-rules-list">
-        <li>The <span class="highlight">Safe Zone</span> is between <span class="highlight">16 and 21</span>. Lock your points in this range to survive.</li>
-        <li><span class="highlight">Ace</span> acts as <span class="highlight">11 points</span> if you have exactly 2 cards in total. If you have more than 2 cards, Ace counts as <span class="highlight">1 point</span>.</li>
-        <li>Number cards (2-10) are worth their face value.</li>
-        <li>Face cards (J, Q, K) are worth 10 points.</li>
-        <li>If you go over 21, you bust and are eliminated.</li>
-    </ul>
+<div class="rules-guide">
+    <div class="rules-hero-card">
+        <div class="rules-hero-icon">🃏</div>
+        <div class="rules-hero-text">
+            <h4>OBJECTIVE</h4>
+            <p>Score between <strong>16 and 21</strong> without busting over. Last player standing wins!</p>
+        </div>
+    </div>
+
+    <div class="rules-chips-row">
+        <div class="rule-chip safe">
+            <span class="chip-badge">SAFE ZONE</span>
+            <strong>16 – 21 Points</strong>
+            <small>Survive to next round</small>
+        </div>
+        <div class="rule-chip danger">
+            <span class="chip-badge">BUST</span>
+            <strong>22+ Points</strong>
+            <small>Deathmatch playoff</small>
+        </div>
+    </div>
+
+    <div class="rules-section-title">HOW IT WORKS</div>
+    <div class="rules-steps-list">
+        <div class="rule-step-item">
+            <div class="step-num">01</div>
+            <div class="step-desc">
+                <strong>Your Turn:</strong> Hit to draw another card, or Stand to lock your points.
+            </div>
+        </div>
+        <div class="rule-step-item">
+            <div class="step-num">02</div>
+            <div class="step-desc">
+                <strong>Reach Safe Zone:</strong> Aim for 16–21. Once you hit 16+, you can safely pass.
+            </div>
+        </div>
+        <div class="rule-step-item">
+            <div class="step-num">03</div>
+            <div class="step-desc">
+                <strong>Avoid Busting:</strong> Exceeding 21 eliminates you or sends you to Deathmatch!
+            </div>
+        </div>
+    </div>
+
+    <div class="rules-section-title">CARD VALUES</div>
+    <div class="card-values-grid">
+        <div class="val-card"><span>2 – 10</span><small>Face Value</small></div>
+        <div class="val-card"><span>J, Q, K</span><small>10 Points</small></div>
+        <div class="val-card gold-border"><span>ACE</span><small>11 Pts (2 cards)<br>1 Pt (3+ cards)</small></div>
+    </div>
+
+    <div class="rules-tip-box">
+        <span class="tip-icon">💡</span>
+        <div class="tip-content">
+            <strong>Pro Strategy:</strong> If you reach 16 or 17, pass immediately! Drawing another card has high bust risk.
+        </div>
+    </div>
 </div>`,
+
     'avalon': `
-<div class="premium-rules">
-    <p><span class="highlight">Goal:</span> Good wins if they complete 3 Quests. Evil wins if they fail 3 Quests or assassinate Merlin.</p>
-    <ul class="premium-rules-list">
-        <li><span class="highlight">Merlin (Good):</span> Knows who the Evil players are, but must stay hidden.</li>
-        <li><span class="highlight">Percival (Good):</span> Knows who Merlin is, and must protect him.</li>
-        <li><span class="highlight">Loyal Servants (Good):</span> Must deduce who Evil is and vote them out of Quests.</li>
-        <li><span class="highlight">Assassin (Evil):</span> If Evil loses the Quests, the Assassin can steal the win by guessing who Merlin is.</li>
-        <li><span class="highlight">Minions of Mordred (Evil):</span> Must pretend to be Good and secretly fail the Quests.</li>
-    </ul>
+<div class="rules-guide">
+    <div class="rules-hero-card purple">
+        <div class="rules-hero-icon">👑</div>
+        <div class="rules-hero-text">
+            <h4>OBJECTIVE</h4>
+            <p><strong>Good</strong> must pass 3 Quests. <strong>Evil</strong> sabotages 3 Quests or kills Merlin!</p>
+        </div>
+    </div>
+
+    <div class="rules-chips-row">
+        <div class="rule-chip good">
+            <span class="chip-badge">GOOD FORCES</span>
+            <strong>Loyal to Arthur</strong>
+            <small>Pass 3 Quests</small>
+        </div>
+        <div class="rule-chip evil">
+            <span class="chip-badge">EVIL MINIONS</span>
+            <strong>Mordred's Court</strong>
+            <small>Fail 3 Quests or Kill Merlin</small>
+        </div>
+    </div>
+
+    <div class="rules-section-title">ROUND PHASES</div>
+    <div class="rules-steps-list">
+        <div class="rule-step-item">
+            <div class="step-num">01</div>
+            <div class="step-desc">
+                <strong>Propose Team:</strong> The current Quest Leader selects knights for the mission.
+            </div>
+        </div>
+        <div class="rule-step-item">
+            <div class="step-num">02</div>
+            <div class="step-desc">
+                <strong>Public Vote:</strong> All players vote Approve or Reject. Majority wins.
+            </div>
+        </div>
+        <div class="rule-step-item">
+            <div class="step-num">03</div>
+            <div class="step-desc">
+                <strong>Secret Quest:</strong> Team members secretly submit Success or Fail. Even one Fail sabotages the quest!
+            </div>
+        </div>
+        <div class="rule-step-item">
+            <div class="step-num">04</div>
+            <div class="step-desc">
+                <strong>Assassination:</strong> If Good passes 3 Quests, Evil Assassin gets one shot to identify and execute Merlin.
+            </div>
+        </div>
+    </div>
+
+    <div class="rules-section-title">KEY CHARACTERS</div>
+    <div class="roles-guide-grid">
+        <div class="role-guide-card good">
+            <span class="role-badge">GOOD</span>
+            <strong>🧙 Merlin</strong>
+            Knows who all Evil agents are, but must guide without getting assassinated.
+        </div>
+        <div class="role-guide-card good">
+            <span class="role-badge">GOOD</span>
+            <strong>🛡️ Percival</strong>
+            Knows who Merlin is. Must act as decoy to protect Merlin from death.
+        </div>
+        <div class="role-guide-card evil">
+            <span class="role-badge">EVIL</span>
+            <strong>🗡️ Assassin</strong>
+            Executes Merlin at the climax if Good achieves 3 Quest wins.
+        </div>
+        <div class="role-guide-card evil">
+            <span class="role-badge">EVIL</span>
+            <strong>🎭 Morgana</strong>
+            Disguises as Merlin to confuse Percival into voting with Evil.
+        </div>
+    </div>
+
+    <div class="rules-tip-box">
+        <span class="tip-icon">💡</span>
+        <div class="tip-content">
+            <strong>Pro Strategy:</strong> If you are Merlin, act like a regular loyal knight. If Evil notices you know too much, they will assassinate you!
+        </div>
+    </div>
 </div>`,
+
     'wheel': `
-<div class="premium-rules">
-    <p><span class="highlight">Goal:</span> Be the last player standing.</p>
-    <ul class="premium-rules-list">
-        <li>Each round, all active players' names are placed on the wheel.</li>
-        <li>The Host spins the wheel.</li>
-        <li>Whichever player the wheel lands on is eliminated from the game.</li>
-        <li>The game continues spinning round by round until only one player survives.</li>
-    </ul>
-</div>`,
-    'bigtwo': `
-<div class="premium-rules">
-    <p><span class="highlight">Goal:</span> Be the first to shed all your cards.</p>
-    <ul class="premium-rules-list">
-        <li>The game starts with the player holding the <span class="highlight">3 of Diamonds</span>.</li>
-        <li>Card rankings from lowest to highest: 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A, 2.</li>
-        <li>Suit rankings: Diamonds < Clubs < Hearts < Spades.</li>
-        <li>Play single cards, pairs, three of a kind, or 5-card combinations (straight, flush, full house, four of a kind, straight flush).</li>
-        <li>You must play the same number of cards as the previous play and beat its value.</li>
-        <li>If all other players pass, you can open a new trick with any valid combination.</li>
-    </ul>
+<div class="rules-guide">
+    <div class="rules-hero-card gold">
+        <div class="rules-hero-icon">🎰</div>
+        <div class="rules-hero-text">
+            <h4>OBJECTIVE</h4>
+            <p>Predict where the golden ball will land! Bet your VIP chips on Colors (Red/Black), Even/Odd, Number ranges, or pick a direct lucky number for up to 36x payouts.</p>
+        </div>
+    </div>
+
+    <div class="rules-section-title">BET TYPES & PAYOUT ODDS</div>
+    <div class="card-values-grid">
+        <div class="val-card red">
+            <span class="val-title">🔴 RED / ⚫ BLACK</span>
+            <span class="val-points">2x Payout</span>
+            <span class="val-note">18 Red pockets, 18 Black pockets. 1:1 return on your chips.</span>
+        </div>
+        <div class="val-card blue">
+            <span class="val-title">EVEN / ODD</span>
+            <span class="val-points">2x Payout</span>
+            <span class="val-note">Even (2,4...36) or Odd (1,3...35). Zero loses.</span>
+        </div>
+        <div class="val-card gold">
+            <span class="val-title">1-18 (LOW) / 19-36 (HIGH)</span>
+            <span class="val-points">2x Payout</span>
+            <span class="val-note">Bet on the lower half or upper half of the table.</span>
+        </div>
+        <div class="val-card green">
+            <span class="val-title">🎯 LUCKY NUMBER (0-36)</span>
+            <span class="val-points">36x Payout!</span>
+            <span class="val-note">Massive straight-up win! Bet 100 chips to win 3,600 chips! Includes Green 0.</span>
+        </div>
+    </div>
+
+    <div class="rules-section-title">GAME PHASES</div>
+    <div class="rules-steps-list">
+        <div class="rule-step-item">
+            <div class="step-num">01</div>
+            <div class="step-desc">
+                <strong>Place Bets:</strong> Select your chip denomination (25, 50, 100, 250, 500) and tap the table to place multiple bets.
+            </div>
+        </div>
+        <div class="rule-step-item">
+            <div class="step-num">02</div>
+            <div class="step-desc">
+                <strong>The Wheel Spins:</strong> The Host spins the golden European roulette wheel, synchronizing on all players' screens.
+            </div>
+        </div>
+        <div class="rule-step-item">
+            <div class="step-num">03</div>
+            <div class="step-desc">
+                <strong>Instant Payouts:</strong> The winning number, color, and parity are revealed. Winners take the pot and climb the live high-roller leaderboard!
+            </div>
+        </div>
+    </div>
+
+    <div class="rules-tip-box">
+        <span class="tip-icon">💡</span>
+        <div class="tip-content">
+            <strong>VIP Re-buy:</strong> If your bankroll drops to 0, use the instant +500 Re-buy VIP Credit so you never run out of action!
+        </div>
+    </div>
 </div>`
 };
 
 document.querySelectorAll('.details-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
+        triggerHaptic('light');
         const game = btn.getAttribute('data-game');
         showAlert('How to Play', gameRules[game]);
     });
 });
 
 // ---- Lobby Logic ----
-
-// Generate a unique 4-digit room code not already in use
 function generateRoomCode() {
     return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-// Delete all existing rooms hosted by this player (awaited sequentially)
 async function cleanupOldHostRooms() {
-    const snap = await get(ref(db, 'rooms'));
-    const allRooms = snap.val();
-    if (!allRooms) return;
-    for (const rCode of Object.keys(allRooms)) {
-        if (allRooms[rCode].host === currentPlayer.id) {
-            await remove(ref(db, `rooms/${rCode}`));
+    try {
+        const snap = await get(ref(db, 'rooms'));
+        const allRooms = snap.val();
+        if (!allRooms) return;
+        for (const rCode of Object.keys(allRooms)) {
+            if (allRooms[rCode].host === currentPlayer.id) {
+                await remove(ref(db, `rooms/${rCode}`));
+            }
         }
-    }
+    } catch (e) {}
 }
 
 createGameBtn.addEventListener('click', async () => {
-    // Guard against double-click
     if (createGameBtn.disabled) return;
     createGameBtn.disabled = true;
+    triggerHaptic('medium');
 
     try {
-        // If already in a room, leave it first
         if (currentPlayer.roomCode) {
             await leaveRoom();
         }
 
-        // Delete any orphaned host rooms
         await cleanupOldHostRooms();
 
-        // Get a unique room code
         const roomCode = generateRoomCode();
         currentPlayer.isHost = true;
         currentPlayer.roomCode = roomCode;
@@ -288,7 +554,6 @@ createGameBtn.addEventListener('click', async () => {
             photoUrl: currentPlayer.photoUrl || ''
         };
 
-        // Create room in Firebase
         await set(ref(db, `rooms/${roomCode}`), {
             host: currentPlayer.id,
             status: 'waiting',
@@ -311,18 +576,11 @@ createGameBtn.addEventListener('click', async () => {
 });
 
 // Listen for active rooms globally
-let allRoomsData = null;
-
 onValue(ref(db, 'rooms'), (snapshot) => {
-    allRoomsData = snapshot.val();
-    renderPublicRooms();
-});
-
-function renderPublicRooms() {
     if (!publicRoomsList) return;
 
     publicRoomsList.innerHTML = '';
-    const rooms = allRoomsData;
+    const rooms = snapshot.val();
     let hasActiveRooms = false;
 
     if (rooms) {
@@ -330,23 +588,17 @@ function renderPublicRooms() {
             const room = rooms[roomCode];
             const pCount = room.players ? Object.keys(room.players).length : 0;
 
-            // Auto-delete genuinely empty rooms
             if (pCount === 0) {
                 remove(ref(db, `rooms/${roomCode}`));
                 return;
             }
 
-            // Determine joinability
             let isJoinable = false;
             const rGameType = room.gameType || '21';
 
-            let isFull = false;
-            if (rGameType === 'bigtwo' && pCount >= 4) isFull = true;
-            if (rGameType === 'avalon' && pCount >= 14) isFull = true;
-
-            if (room.status === 'waiting' && !isFull) {
+            if (room.status === 'waiting') {
                 isJoinable = true;
-            } else if (room.status === 'playing' && rGameType === 'avalon' && !isFull) {
+            } else if (room.status === 'playing' && rGameType === 'avalon') {
                 if (room.avalonState && room.avalonState.phase === 'setup') {
                     isJoinable = true;
                 }
@@ -355,33 +607,42 @@ function renderPublicRooms() {
             if (isJoinable && rGameType === currentGameType) {
                 hasActiveRooms = true;
 
-                const roomBtn = document.createElement('button');
-                roomBtn.className = 'btn secondary full-width mb-10';
-                roomBtn.style.textAlign = 'left';
-                roomBtn.style.display = 'flex';
-                roomBtn.style.justifyContent = 'space-between';
-                roomBtn.innerHTML = `<span>Table: <strong>${roomCode}</strong></span> <span>👥 ${pCount}</span>`;
+                const roomItem = document.createElement('div');
+                roomItem.className = 'table-row-item';
+                roomItem.innerHTML = `
+                    <div class="table-row-left">
+                        <div class="table-icon-chip">🎲</div>
+                        <div class="table-info-meta">
+                            <h4>Table #${roomCode}</h4>
+                            <span>${rGameType === 'avalon' ? 'Avalon Camelot' : (rGameType === 'wheel' ? 'VIP Roulette Royale' : '21 Card Survival')}</span>
+                        </div>
+                    </div>
+                    <div class="table-row-right">
+                        <span class="player-count-chip">👥 ${pCount}</span>
+                        <button class="btn primary sm">Join →</button>
+                    </div>
+                `;
 
-                roomBtn.addEventListener('click', async () => {
-                    // Don't join if already in a room
+                roomItem.addEventListener('click', async () => {
                     if (currentPlayer.roomCode) {
-                        showAlert('Already in a room', 'Leave your current room before joining another.');
+                        showAlert('Already in a room', 'Leave your current table before joining another.');
                         return;
                     }
+                    triggerHaptic('medium');
                     currentPlayer.isHost = false;
                     currentPlayer.roomCode = roomCode;
                     joinRoom(roomCode);
                 });
 
-                publicRoomsList.appendChild(roomBtn);
+                publicRoomsList.appendChild(roomItem);
             }
         });
     }
 
     if (!hasActiveRooms) {
-        publicRoomsList.innerHTML = '<p class="text-center mt-10" style="color: #666;">No active tables found.</p>';
+        publicRoomsList.innerHTML = '<p class="text-center mt-10 text-muted">No active tables found. Host one above!</p>';
     }
-}
+});
 
 async function joinRoom(roomCode, skipCheck = false) {
     if (!skipCheck) {
@@ -389,7 +650,7 @@ async function joinRoom(roomCode, skipCheck = false) {
         const snapshot = await get(roomRef);
 
         if (!snapshot.exists()) {
-            showAlert('Error', 'Room not found or has been closed.');
+            showAlert('Error', 'Room #' + roomCode + ' not found or has been closed.');
             currentPlayer.roomCode = null;
             currentPlayer.isHost = false;
             return;
@@ -397,23 +658,8 @@ async function joinRoom(roomCode, skipCheck = false) {
 
         const roomData = snapshot.val();
         currentGameType = roomData.gameType || '21';
-
-        const currentPlayers = roomData.players ? Object.keys(roomData.players).length : 0;
-        if (currentGameType === 'bigtwo' && currentPlayers >= 4) {
-            showAlert('Room Full', 'Big Two tables have a maximum of 4 players.');
-            currentPlayer.roomCode = null;
-            currentPlayer.isHost = false;
-            return;
-        }
-        if (currentGameType === 'avalon' && currentPlayers >= 14) {
-            showAlert('Room Full', 'Avalon tables have a maximum of 14 players.');
-            currentPlayer.roomCode = null;
-            currentPlayer.isHost = false;
-            return;
-        }
     }
 
-    // Add player to room
     const playersRef = ref(db, `rooms/${roomCode}/players/${currentPlayer.id}`);
     await set(playersRef, {
         name: currentPlayer.name,
@@ -421,20 +667,17 @@ async function joinRoom(roomCode, skipCheck = false) {
         photoUrl: currentPlayer.photoUrl
     });
 
-    // Auto-remove on disconnect
     onDisconnect(playersRef).remove();
 
-    // UI Updates
     lobbyActions.classList.add('hidden');
     activeLobby.classList.remove('hidden');
     displayRoomCode.textContent = roomCode;
     gameRoomCode.textContent = roomCode;
+    
     const wheelRoomCode = document.getElementById('wheelRoomCode');
     if (wheelRoomCode) wheelRoomCode.textContent = roomCode;
     const avalonRoomCode = document.getElementById('avalonRoomCode');
     if (avalonRoomCode) avalonRoomCode.textContent = roomCode;
-    const bigTwoRoomCode = document.getElementById('bigTwoRoomCode');
-    if (bigTwoRoomCode) bigTwoRoomCode.textContent = roomCode;
     if (myPlayerName) myPlayerName.textContent = currentPlayer.name;
 
     if (currentPlayer.isHost) {
@@ -443,18 +686,40 @@ async function joinRoom(roomCode, skipCheck = false) {
         startGameBtn.classList.add('hidden');
     }
 
-    // Listen for player list changes
     if (activeLobbyRef) activeLobbyRef();
     activeLobbyRef = onValue(ref(db, `rooms/${roomCode}/players`), (snapshot) => {
         const players = snapshot.val();
         connectedPlayersList.innerHTML = '';
         let count = 0;
-
+        
         if (players) {
             Object.values(players).forEach(p => {
-                if (!p || typeof p !== 'object' || !p.name) return; // Fix for Firebase array parsing bug
+                if (!p || typeof p !== 'object' || !p.name) return;
                 const li = document.createElement('li');
-                li.textContent = p.name + (p.isHost ? ' 👑 (Host)' : '');
+                li.className = 'player-slot-chip' + (p.isHost ? ' is-host' : '');
+
+                const avatar = document.createElement('div');
+                avatar.className = 'player-slot-avatar';
+                if (p.photoUrl) {
+                    avatar.style.backgroundImage = `url('${p.photoUrl}')`;
+                } else {
+                    avatar.textContent = p.name.substring(0, 2).toUpperCase();
+                }
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'player-slot-name';
+                nameSpan.textContent = p.name;
+
+                li.appendChild(avatar);
+                li.appendChild(nameSpan);
+
+                if (p.isHost) {
+                    const crown = document.createElement('span');
+                    crown.className = 'host-crown-badge';
+                    crown.textContent = '👑';
+                    li.appendChild(crown);
+                }
+
                 connectedPlayersList.appendChild(li);
                 count++;
             });
@@ -462,26 +727,22 @@ async function joinRoom(roomCode, skipCheck = false) {
         playerCount.textContent = count;
     });
 
-    // Listen for game status changes
     if (activeStatusRef) activeStatusRef();
     activeStatusRef = onValue(ref(db, `rooms/${roomCode}/status`), (snapshot) => {
         const status = snapshot.val();
         if (status === 'playing') {
+            triggerHaptic('success');
             if (currentGameType === 'wheel') {
                 switchView('wheelGame');
                 joinWheelListener(roomCode, currentPlayer.id, currentPlayer.isHost);
             } else if (currentGameType === 'avalon') {
                 switchView('avalonGame');
                 joinAvalonListener(roomCode, currentPlayer.id, currentPlayer.isHost);
-            } else if (currentGameType === 'bigtwo') {
-                switchView('bigTwoGame');
-                joinBigTwoListener(roomCode, currentPlayer.id, currentPlayer.isHost);
             } else {
                 switchView('game');
                 joinGameListener(roomCode, currentPlayer.id, currentPlayer.isHost);
             }
         } else if (status === 'waiting') {
-            // Return to lobby if game just ended
             if (document.getElementById('game')?.classList.contains('active')) {
                 leaveGame();
                 switchView('lobby');
@@ -495,10 +756,6 @@ async function joinRoom(roomCode, skipCheck = false) {
                 leaveAvalon();
                 switchView('lobby');
             }
-            if (document.getElementById('bigTwoGame')?.classList.contains('active')) {
-                leaveBigTwo();
-                switchView('lobby');
-            }
         }
     });
 }
@@ -508,50 +765,28 @@ startGameBtn.addEventListener('click', async () => {
     if (startGameLock) return;
     startGameLock = true;
     startGameBtn.disabled = true;
+    triggerHaptic('medium');
 
     try {
-        const snap = await get(ref(db, `rooms/${currentPlayer.roomCode}/players`));
-        const players = snap.val() || {};
-        const pCount = Object.keys(players).length;
-
-        if (currentGameType === '21' && pCount < 2) {
-            showAlert('Not Enough Players', '21 Card Game requires at least 2 players.');
-            return;
-        }
-        if (currentGameType === 'bigtwo' && pCount < 2) {
-            showAlert('Not Enough Players', 'Big Two requires at least 2 players.');
-            return;
-        }
-        if (currentGameType === 'avalon' && pCount < 1) {
-            showAlert('Not Enough Players', 'Avalon requires at least 1 player.');
-            return;
-        }
-        if (currentGameType === 'wheel' && pCount < 2) {
-            showAlert('Not Enough Players', 'Spin The Wheel requires at least 2 players.');
-            return;
-        }
-
         if (currentGameType === 'wheel') {
             await initWheelGame(currentPlayer.roomCode);
         } else if (currentGameType === 'avalon') {
             await initAvalon(currentPlayer.roomCode);
-        } else if (currentGameType === 'bigtwo') {
-            await initBigTwo(currentPlayer.roomCode);
         } else {
             await initGame(currentPlayer.roomCode);
         }
         await set(ref(db, `rooms/${currentPlayer.roomCode}/status`), 'playing');
     } catch (e) {
-        showAlert('Error', 'Failed to start game. Please try again.');
+        showAlert('Error', 'Failed to start game: ' + (e.message || e));
         startGameBtn.disabled = false;
     } finally {
         startGameLock = false;
-        // Re-enable after a delay to prevent rapid re-clicks
         setTimeout(() => { startGameBtn.disabled = false; }, 2000);
     }
 });
 
 leaveGameBtn.addEventListener('click', () => {
+    triggerHaptic('light');
     leaveRoom();
     switchView('lobby');
 });
@@ -559,6 +794,7 @@ leaveGameBtn.addEventListener('click', () => {
 const leaveWheelBtn = document.getElementById('leaveWheelBtn');
 if (leaveWheelBtn) {
     leaveWheelBtn.addEventListener('click', () => {
+        triggerHaptic('light');
         leaveRoom();
         switchView('lobby');
     });
@@ -567,14 +803,7 @@ if (leaveWheelBtn) {
 const leaveAvalonBtn = document.getElementById('leaveAvalonBtn');
 if (leaveAvalonBtn) {
     leaveAvalonBtn.addEventListener('click', () => {
-        leaveRoom();
-        switchView('lobby');
-    });
-}
-
-const leaveBigTwoBtn = document.getElementById('leaveBigTwoBtn');
-if (leaveBigTwoBtn) {
-    leaveBigTwoBtn.addEventListener('click', () => {
+        triggerHaptic('light');
         leaveRoom();
         switchView('lobby');
     });
@@ -587,17 +816,12 @@ async function leaveRoom() {
     const playerId = currentPlayer.id;
 
     try {
-        // Cancel disconnect listener
         onDisconnect(ref(db, `rooms/${roomCode}/players/${playerId}`)).cancel();
-
-        // Remove player from DB
         await remove(ref(db, `rooms/${roomCode}/players/${playerId}`));
 
-        // If host leaves, delete the entire room so it doesn't stay orphaned
         if (currentPlayer.isHost) {
             await remove(ref(db, `rooms/${roomCode}`));
         } else {
-            // If room becomes empty (e.g. last non-host leaves), clean up
             const snap = await get(ref(db, `rooms/${roomCode}/players`));
             if (!snap.exists()) {
                 await remove(ref(db, `rooms/${roomCode}`));
@@ -607,19 +831,16 @@ async function leaveRoom() {
         console.warn('leaveRoom error:', e);
     }
 
-    // Unsubscribe from listeners
     if (activeLobbyRef) { activeLobbyRef(); activeLobbyRef = null; }
     if (activeStatusRef) { activeStatusRef(); activeStatusRef = null; }
 
     leaveGame();
     leaveWheelGame();
     leaveAvalon();
-    leaveBigTwo();
 
     currentPlayer.roomCode = null;
     currentPlayer.isHost = false;
 
-    // Reset UI
     lobbyActions.classList.remove('hidden');
     activeLobby.classList.add('hidden');
     document.getElementById('hostControls')?.classList.add('hidden');

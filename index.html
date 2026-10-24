@@ -4,29 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HighTable Games</title>
+    <title>HighTable - VIP Multiplayer Lounge</title>
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=41">
 </head>
 
 <body>
 
-    <!-- Splash Screen 1 -->
-    <div id="splash-1" class="view active splash">
+    <!-- Toast Notice -->
+    <div id="toastNotice" class="toast-notice">Room code copied!</div>
+
+    <!-- Splash Screen 1 (Archived / Non-blocking) -->
+    <div id="splash-1" class="view splash hidden">
         <h1 class="logo-text">Welcome To HighTable Games</h1>
     </div>
 
-    <!-- Splash Screen 2 -->
-    <div id="splash-2" class="view splash">
+    <!-- Splash Screen 2 (Archived / Non-blocking) -->
+    <div id="splash-2" class="view splash hidden">
         <div class="overlay"></div>
         <img src="assets/images/21.jpg" alt="21+" class="warning-img">
-        <p class="warning-text">Amaran: <br>Meminum Arak dibawah 21 tahun adalah dibenarkan.</p>
+        <p class="warning-text">⚠️ Amaran: Meminum Arak dibawah 21 tahun adalah dibenarkan.</p>
     </div>
 
-    <!-- Player Registration -->
-    <div id="registration" class="view">
+    <!-- Player Registration (Fallback if needed) -->
+    <div id="registration" class="view hidden">
         <div class="auth-container glass">
             <h2>Join the Table</h2>
             <p>Enter your player name to begin</p>
@@ -35,144 +40,244 @@
         </div>
     </div>
 
-    <!-- Home Page (Game Menu) -->
-    <div id="home" class="view with-nav">
-        <header class="header">
-            <h2>HighTable Games</h2>
+    <!-- ==========================================
+         HOME PAGE (GAME MENU & VIP LOUNGE)
+         ========================================== -->
+    <div id="home" class="view active">
+
+        <!-- Top VIP Player Header -->
+        <header class="topbar-vip">
+            <div class="topbar-brand">
+                <img src="assets/images/hightable_logo.jpg" alt="HighTable Logo" class="topbar-logo">
+                <div class="brand-text">
+                    <h2>HIGHTABLE</h2>
+                    <span>VIP LOUNGE</span>
+                </div>
+            </div>
+            <div class="topbar-player" id="topbarPlayerChip" title="Tap to change name">
+                <div class="player-avatar-circle" id="topbarAvatar">VIP</div>
+                <div class="player-chip-info">
+                    <span class="player-chip-name" id="topbarPlayerName">Player</span>
+                    <span class="player-chip-tag">✦ VIP MEMBER</span>
+                </div>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.6;">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+            </div>
         </header>
-        <div class="game-list">
-            <div class="game-card" id="cardGamesBtn">
-                <div class="card-content">
-                    <h3 style="display: flex; align-items: center; gap: 8px;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
-                            <circle cx="12" cy="12" r="2"></circle>
-                            <path d="M8 6h.01"></path>
-                            <path d="M16 18h.01"></path>
-                        </svg>
-                        21 Game
-                    </h3>
-                    <p>The classic game of survival.</p>
-                </div>
-                <button class="details-btn" data-game="21" aria-label="Game Rules">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                    </svg>
-                </button>
+
+        <!-- Hero Card with Direct Join -->
+        <div class="hero-banner">
+            <div class="hero-status-pill">
+                <span class="radar-dot"></span>
+                <span>Live Multiplayer Ready</span>
             </div>
-            <div class="game-card" id="bigTwoBtn">
-                <div class="card-content">
-                    <h3 style="display: flex; align-items: center; gap: 8px;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 2L12 8L18 2"></path>
-                            <path d="M6 22L12 16L18 22"></path>
-                            <path d="M2 12H22"></path>
-                        </svg>
-                        Big Two
-                    </h3>
-                    <p>The ultimate card shedding game.</p>
-                </div>
-                <button class="details-btn" data-game="bigtwo" aria-label="Game Rules">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                    </svg>
-                </button>
+            <h1 class="hero-title">WELCOME TO THE <span>HIGH TABLE</span></h1>
+            <p class="hero-subtitle">Select a table lounge below or enter your friend's 4-digit table code to join immediately.</p>
+            
+            <!-- Quick Table Code Join -->
+            <div class="quick-join-bar">
+                <input type="text" id="quickRoomCodeInput" placeholder="CODE (e.g. 8492)" maxlength="6" autocomplete="off">
+                <button id="quickJoinBtn" class="btn primary">Join Table →</button>
             </div>
-            <div class="game-card" id="avalonBtn">
-                <div class="card-content">
-                    <h3 style="display: flex; align-items: center; gap: 8px;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        </svg>
-                        Avalon
-                    </h3>
-                    <p>The legendary game of social deduction.</p>
-                </div>
-                <button class="details-btn" data-game="avalon" aria-label="Game Rules">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                    </svg>
-                </button>
-            </div>
-            <div class="game-card" id="spinWheelBtn">
-                <div class="card-content">
-                    <h3 style="display: flex; align-items: center; gap: 8px;">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        </div>
+
+        <!-- Section Title -->
+        <div class="section-header">
+            <h3>Select Game Table</h3>
+            <span class="badge-counter">3 LOUNGES</span>
+        </div>
+
+        <!-- Game Lounge Cards -->
+        <div class="game-lounges">
+
+            <!-- 1. 21 Card Survival -->
+            <div class="game-lounge-card" id="cardGamesBtn">
+                <div class="lounge-backdrop" style="background-image: url('assets/images/card_21_banner.jpg');">
+                    <div class="lounge-tags">
+                        <span class="lounge-tag hot">🔥 High Stakes</span>
+                        <span class="lounge-tag">2-10 Players</span>
+                        <span class="lounge-tag gold">Safe: 16-21</span>
+                    </div>
+                    <button class="lounge-info-btn details-btn" data-game="21" aria-label="Game Rules">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
                             <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="2" x2="12" y2="12"></line>
-                            <line x1="12" y1="12" x2="20.66" y2="17"></line>
-                            <line x1="12" y1="12" x2="3.34" y2="17"></line>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
                         </svg>
-                        Spin The Wheel
-                    </h3>
-                    <p>The ultimate roulette.</p>
+                    </button>
                 </div>
-                <button class="details-btn" data-game="wheel" aria-label="Game Rules">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                <div class="lounge-content">
+                    <div class="lounge-header-row">
+                        <h3 class="lounge-title">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--gold-primary)" stroke-width="2">
+                                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                                <circle cx="12" cy="12" r="2"></circle>
+                                <path d="M8 6h.01"></path>
+                                <path d="M16 18h.01"></path>
+                            </svg>
+                            21 Card Survival
+                        </h3>
+                        <span class="lounge-players-count">Blackjack Survival</span>
+                    </div>
+                    <p class="lounge-desc">Hit or Stand. Lock your points between 16 and 21 to survive. Bust above 21 and enter the Deathmatch elimination.</p>
+                    <div class="lounge-action-row">
+                        <button class="btn primary">Enter 21 Lobby</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Avalon -->
+            <div class="game-lounge-card" id="avalonBtn">
+                <div class="lounge-backdrop" style="background-image: url('assets/images/avalon_banner.jpg');">
+                    <div class="lounge-tags">
+                        <span class="lounge-tag" style="border-color: var(--royal-purple); color: #d8b4fe;">🗡️ Social Deduction</span>
+                        <span class="lounge-tag">5-10 Players</span>
+                        <span class="lounge-tag gold">Merlin vs Mordred</span>
+                    </div>
+                    <button class="lounge-info-btn details-btn" data-game="avalon" aria-label="Game Rules">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="lounge-content">
+                    <div class="lounge-header-row">
+                        <h3 class="lounge-title">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--gold-primary)" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            The Resistance: Avalon
+                        </h3>
+                        <span class="lounge-players-count">Intrigue & Deceit</span>
+                    </div>
+                    <p class="lounge-desc">Forces of Good and Evil clash in Camelot. Complete 3 Quests or assassinate Merlin to steal victory in the dark.</p>
+                    <div class="lounge-action-row">
+                        <button class="btn primary">Enter Avalon Lobby</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. VIP Roulette Royale -->
+            <div class="game-lounge-card" id="spinWheelBtn">
+                <div class="lounge-backdrop" style="background-image: url('assets/images/wheel_banner.jpg');">
+                    <div class="lounge-tags">
+                        <span class="lounge-tag gold">👑 VIP Roulette</span>
+                        <span class="lounge-tag">Red / Black / 0-36</span>
+                        <span class="lounge-tag hot">Up to 36x Payout</span>
+                    </div>
+                    <button class="lounge-info-btn details-btn" data-game="wheel" aria-label="Game Rules">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="lounge-content">
+                    <div class="lounge-header-row">
+                        <h3 class="lounge-title">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--gold-primary)" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="2" x2="12" y2="12"></line>
+                                <line x1="12" y1="12" x2="20.66" y2="17"></line>
+                                <line x1="12" y1="12" x2="3.34" y2="17"></line>
+                            </svg>
+                            VIP Roulette Royale
+                        </h3>
+                        <span class="lounge-players-count">Colors & Numbers</span>
+                    </div>
+                    <p class="lounge-desc">Classic European Roulette. Place your chips on Red, Black, Even, Odd, or straight-up on your lucky numbers 0-36. Watch the golden wheel spin in real-time!</p>
+                    <div class="lounge-action-row">
+                        <button class="btn primary">Enter Roulette Lobby</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ==========================================
+         LOBBY SYSTEM (HOST & CONNECTED ROOMS)
+         ========================================== -->
+    <div id="lobby" class="view">
+        <!-- Header -->
+        <div class="lobby-header-bar">
+            <div class="lobby-header-left">
+                <button class="back-circle-btn" id="backToHomeBtn" aria-label="Back">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
                     </svg>
+                </button>
+                <div class="lobby-title-wrap">
+                    <h2 id="lobbyTitle">Game Lobby</h2>
+                    <span>HighTable Lounge</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outside Room: Lobby Actions -->
+        <div class="lobby-actions">
+            <!-- Host Game Card -->
+            <div class="host-action-card">
+                <h3>Host a VIP Table</h3>
+                <p>Create a private table code and invite your crew to join.</p>
+                <button id="createGameBtn" class="btn primary full-width">✦ Create Host Table</button>
+            </div>
+
+            <!-- Active Public Tables List -->
+            <div class="section-header">
+                <h3>Active Public Tables</h3>
+                <span class="radar-dot"></span>
+            </div>
+            <div id="publicRoomsList" class="public-tables-container">
+                <p class="text-center mt-10 text-muted">Searching for active tables...</p>
+            </div>
+        </div>
+
+        <!-- Inside Room: Active Room Arena -->
+        <div id="activeLobby" class="hidden">
+            <div class="room-arena-card">
+                <div class="hero-status-pill">
+                    <span class="radar-dot"></span>
+                    <span>Table Ready</span>
+                </div>
+                <h3>Table Code</h3>
+                <div class="room-code-badge" id="roomCodeBadge" title="Click to copy">
+                    <span class="room-code-text" id="displayRoomCode">----</span>
+                    <span class="copy-icon-btn">📋</span>
+                </div>
+                <p class="text-muted" style="font-size: 12px; margin-bottom: 12px;">Share this code with players to join your table</p>
+
+                <div class="section-header mt-20">
+                    <h3>Players Connected (<span id="playerCount">0</span>)</h3>
+                </div>
+                <ul id="connectedPlayers" class="connected-players-grid">
+                    <!-- Players injected here via JS -->
+                </ul>
+
+                <button id="startGameBtn" class="btn primary full-width mt-15 hidden" style="font-size: 17px; padding: 18px;">
+                    ✦ START GAME NOW
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Lobby System -->
-    <div id="lobby" class="view with-nav">
-        <header class="header">
-            <button class="back-btn" id="backToHomeBtn">←</button>
-            <div style="flex-grow: 1; text-align: center;">
-                <h2 id="lobbyTitle" style="margin-bottom: 5px;">Lobby</h2>
-                <p id="lobbySubtitle" style="margin: 0; font-size: 0.9rem; color: #aaa;"></p>
-            </div>
-            <div style="width: 30px;"></div> <!-- Spacer for balance -->
-        </header>
-        <div class="lobby-actions">
-            <button id="createGameBtn" class="btn primary">Create Host Game</button>
-            <div class="divider mt-10 mb-10"><span>OR JOIN A TABLE</span></div>
-            <div id="publicRoomsList" class="game-list" style="max-height: 300px; overflow-y: auto;">
-                <p class="text-center mt-10" style="color: #666;">Searching for active tables...</p>
-            </div>
-        </div>
-
-        <!-- Active Room Lobby -->
-        <div id="activeLobby" class="hidden glass">
-            <h3>Room: <span id="displayRoomCode"></span></h3>
-            <div class="player-list">
-                <h4>Players Connected (<span id="playerCount">0</span>)</h4>
-                <ul id="connectedPlayers"></ul>
-            </div>
-            <button id="startGameBtn" class="btn primary hidden">Start Game</button>
-        </div>
-    </div>
-
+    <!-- ==========================================
+         GAME VIEW: 21 CARD GAME
+         ========================================== -->
     <div id="game" class="view">
         <div class="game-header">
-            <span class="room-indicator">Room: <span id="gameRoomCode"></span></span>
-            <div style="display: flex; gap: 10px;">
-                <button id="restartGameBtn" class="btn sm secondary hidden">Restart</button>
-                <button id="leaveGameBtn" class="btn sm danger">Leave</button>
-            </div>
+            <span class="room-indicator">TABLE: <span id="gameRoomCode"></span></span>
+            <button id="leaveGameBtn" class="btn sm danger">Leave Table</button>
         </div>
 
         <div class="game-area">
-
-            <!-- Row 1: Player List -->
+            <!-- Row 1: Player List Carousel -->
             <div id="playerListRow" class="player-list-row mt-10">
                 <!-- Players injected here via JS -->
             </div>
@@ -182,508 +287,255 @@
                 <button id="adjustPositionBtn" class="btn secondary sm">Adjust Turn Order</button>
             </div>
 
-            <!-- Row 3: Cards Area -->
-            <div id="cardsAreaRow" class="cards-area-row glass mt-10 text-center">
+            <!-- Row 3: Cards Table Area -->
+            <div id="cardsAreaRow" class="cards-area-row mt-15 text-center">
                 <h3 id="deathmatchTitle" class="text-danger hidden mb-10" style="letter-spacing: 2px;">DEATHMATCH</h3>
-                
-                <div id="cardTotalProgressBarContainer" style="width: 80%; margin: 0 auto 15px auto; height: 10px; background: rgba(0,0,0,0.3); border-radius: 5px; overflow: hidden; position: relative;">
-                    <div id="cardTotalProgressBar" style="width: 0%; height: 100%; background: #ff3b30; transition: width 0.3s, background 0.3s;"></div>
-                    <div style="position: absolute; width: 100%; top: -2px; left: 0; text-align: center; font-size: 0.7rem; color: #fff; font-weight: bold; pointer-events: none;" id="cardTotalProgressText">0 / 21</div>
-                </div>
-
-                <div id="myCardsArea" class="cards-container" style="justify-content: center; min-height: 120px;">
+                <div id="myCardsArea" class="cards-container">
                     <!-- Cards injected here -->
                 </div>
             </div>
 
-            <!-- Row 4: Actions -->
-            <div id="actionButtonsRow" class="action-buttons-row mt-10 hidden">
-                <button id="giveCardBtn" class="btn primary">Give Card</button>
-                <button id="passBtn" class="btn danger">Pass</button>
+            <!-- Row 4: Action Buttons (Hit / Pass) -->
+            <div id="actionButtonsRow" class="action-buttons-row hidden">
+                <button id="giveCardBtn" class="btn">HIT (GIVE CARD)</button>
+                <button id="passBtn" class="btn">STAND (PASS)</button>
             </div>
 
             <!-- Row 4.5: Deathmatch Host Controls -->
-            <div id="dmHostControlsRow" class="host-panel glass mt-10 hidden danger-border text-center">
+            <div id="dmHostControlsRow" class="host-panel glass mt-15 hidden danger-border text-center" style="padding: 16px;">
                 <h4 class="text-danger" style="margin-bottom: 5px;">Deathmatch Controls</h4>
-                <p style="font-size: 0.9em; margin-bottom: 10px;">Select losing condition:</p>
+                <p style="font-size: 0.85em; margin-bottom: 10px; color: var(--text-secondary);">Select losing condition:</p>
                 <div class="action-buttons-row">
-                    <button class="btn dm-btn secondary" data-cond="highest">Highest</button>
-                    <button class="btn dm-btn secondary" data-cond="middle">Middle</button>
-                    <button class="btn dm-btn secondary" data-cond="lower">Lowest</button>
+                    <button class="btn dm-btn secondary sm" data-cond="highest">Highest</button>
+                    <button class="btn dm-btn secondary sm" data-cond="middle">Middle</button>
+                    <button class="btn dm-btn secondary sm" data-cond="lower">Lowest</button>
                 </div>
                 <button id="dealDmCardsBtn" class="btn primary full-width mt-10 hidden">Deal Cards</button>
             </div>
 
-            <!-- Row 5: Status -->
-            <div id="statusRow" class="status-row glass mt-10">
+            <!-- Row 5: Current Turn Status -->
+            <div id="statusRow" class="status-row mt-15">
                 <div class="status-left">
-                    <div class="playing-card back style-only stacked-deck"></div>
+                    <div class="playing-card back style-only"></div>
                 </div>
                 <div class="status-right" id="currentPlayerTurnDisplay">
-                    <div id="turnProfilePic" class="profile-circle"></div>
+                    <div id="turnProfilePic" class="player-avatar-circle" style="width: 42px; height: 42px;"></div>
                     <div class="status-info">
-                        <div id="turnPlayerName" style="font-weight: bold;">Waiting...</div>
-                        <div id="turnPlayerCards" style="font-size: 0.9em; opacity: 0.8;">Cards: 0</div>
+                        <div id="turnPlayerName" style="font-weight: 700; color: #fff;">Waiting...</div>
+                        <div id="turnPlayerCards" style="font-size: 0.85em; color: var(--gold-light);">Cards: 0</div>
                     </div>
                 </div>
             </div>
 
+            <button id="restartGameBtn" class="btn secondary full-width mt-20 hidden">Restart Game</button>
         </div>
     </div>
 
-    <!-- Big Two Game View -->
-    <div id="bigTwoGame" class="view">
-        <div class="game-header">
-            <span class="room-indicator">Room: <span id="bigTwoRoomCode"></span></span>
-            <div style="display: flex; gap: 10px;">
-                <button id="restartBigTwoBtn" class="btn sm secondary hidden">Restart</button>
-                <button id="leaveBigTwoBtn" class="btn sm danger">Leave</button>
-            </div>
-        </div>
-
-        <div class="game-area">
-
-            <div class="poker-table glass text-center mt-10"
-                style="position: relative; display: flex; flex-direction: column; align-items: center; padding-bottom: 20px;">
-                <div id="bigTwoTablePlayers" class="table-players-layout" style="width: 100%;">
-                    <!-- 4 Players dynamically injected -->
-                </div>
-                <div
-                    style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 100%; min-height: 180px; margin-top: 10px;">
-                    <div id="bigTwoPreviousTrick"
-                        style="display: flex; justify-content: center; transform: scale(0.65); opacity: 0.7; pointer-events: none; margin-bottom: -15px;">
-                    </div>
-                    <div id="bigTwoCurrentTrick" class="mt-10"
-                        style="display: flex; justify-content: center; z-index: 2;">
-                        <!-- Currently played trick cards go here -->
-                    </div>
-                </div>
-            </div>
-
-            <div id="bigTwoAdjustPositionRow" class="text-right mt-10 hidden">
-                <button id="bigTwoAdjustPositionBtn" class="btn secondary sm">Adjust Turn Order</button>
-            </div>
-
-            <div class="glass mt-10">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h4>Your Hand</h4>
-                    <button id="bigTwoRevealBtn" class="btn secondary sm">Reveal All</button>
-                </div>
-                <div id="bigTwoMyCardsArea" class="cards-container big-two-hand"
-                    style="justify-content: center; min-height: 120px;">
-                    <!-- My Cards injected here -->
-                </div>
-            </div>
-
-            <div id="bigTwoActionButtonsRow" class="action-buttons-row mt-10 hidden">
-                <button id="bigTwoHitBtn" class="btn primary">Play Selected</button>
-                <button id="bigTwoPassBtn" class="btn danger">Pass</button>
-                <button id="bigTwoOpenNewBtn" class="btn secondary hidden">Open New</button>
-            </div>
-
-            <div id="bigTwoStatusRow" class="status-row glass mt-10">
-                <div class="status-right" id="bigTwoCurrentPlayerTurnDisplay">
-                    <div id="bigTwoTurnProfilePic" class="profile-circle"></div>
-                    <div class="status-info">
-                        <div id="bigTwoTurnPlayerName" style="font-weight: bold;">Waiting...</div>
-                        <div id="bigTwoTurnPlayerCards" style="font-size: 0.9em; opacity: 0.8;"></div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Spin The Wheel Game View -->
+    <!-- ==========================================
+         VIP ROULETTE ROYALE GAME VIEW
+         ========================================== -->
     <div id="wheelGame" class="view">
+        <!-- Game Header -->
         <div class="game-header">
-            <span class="room-indicator">Room: <span id="wheelRoomCode"></span></span>
-            <div style="display: flex; gap: 10px;">
-                <button id="restartWheelBtn" class="btn sm secondary hidden">Restart</button>
-                <button id="leaveWheelBtn" class="btn sm danger">Leave</button>
+            <div class="roulette-header-info">
+                <span class="room-indicator">TABLE: <span id="wheelRoomCode"></span></span>
+                <div class="roulette-bankroll-pill" id="playerBankrollBadge" title="Your VIP Chips">
+                    <span class="chip-icon">💎</span>
+                    <span id="playerBankrollText">1,000</span>
+                    <span class="chip-label">CHIPS</span>
+                </div>
             </div>
+            <button id="leaveWheelBtn" class="btn sm danger">Leave</button>
         </div>
 
         <div class="game-area">
-
-            <div class="scroll-container">
-                <div id="wheelWinnerDisplay" class="hidden text-center mt-20 mb-20"
-                    style="padding: 20px; border: 2px solid gold; border-radius: 12px; background: rgba(255,215,0,0.1);">
-                    <h2 style="color: gold; margin-bottom: 5px;">WINNER!</h2>
-                    <h1 id="wheelWinnerText" style="color: #fff;"></h1>
-                </div>
-
-                <div class="wheel-wrapper mt-20 mb-20">
-                    <div class="wheel-pointer"></div>
-                    <div class="wheel-circle-container">
-                        <div id="wheelCircle" class="wheel-circle">
-                            <!-- Wheel slices and labels rendered here -->
+            <div class="scroll-container roulette-container">
+                
+                <!-- Status & Recent History Bar -->
+                <div class="roulette-status-bar">
+                    <div class="roulette-phase-pill" id="roulettePhasePill">
+                        <span class="radar-dot"></span>
+                        <span id="roulettePhaseText">Place Your Bets</span>
+                    </div>
+                    <div class="roulette-history-row" id="rouletteHistoryRow" title="Recent winning numbers">
+                        <span class="history-label">RECENT:</span>
+                        <div id="rouletteHistoryBadges" class="history-badges">
+                            <span class="history-empty">No spins yet</span>
                         </div>
                     </div>
                 </div>
 
-                <div id="wheelHostControls" class="hidden host-panel glass mt-20">
-                    <button id="spinBtn" class="btn primary full-width" style="font-size: 1.2rem; padding: 15px;">SPIN
-                        THE WHEEL!</button>
+                <!-- Result Announcement Banner -->
+                <div id="rouletteResultBanner" class="roulette-result-card hidden">
+                    <div class="result-number-badge" id="resultNumberBadge">
+                        <span id="resultNumberText">17</span>
+                    </div>
+                    <div class="result-info">
+                        <h2 id="resultMainTitle">17 RED</h2>
+                        <p id="resultSubTitle">ODD • HIGH (19-36)</p>
+                        <div id="resultPlayerPayout" class="player-payout-tag">+350 CHIPS WON</div>
+                    </div>
                 </div>
+
+                <!-- The Golden Roulette Wheel Stage -->
+                <div class="roulette-wheel-stage">
+                    <div class="roulette-pointer">
+                        <svg viewBox="0 0 24 24" width="30" height="30" fill="var(--gold-light)">
+                            <polygon points="12,22 4,6 20,6"></polygon>
+                        </svg>
+                    </div>
+                    <div class="wheel-canvas-wrapper" id="wheelCanvasWrapper">
+                        <canvas id="rouletteCanvas" width="340" height="340"></canvas>
+                        <div class="wheel-center-cap">
+                            <span class="center-crest">✦</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Host Controls -->
+                <div id="rouletteHostControls" class="roulette-host-panel hidden">
+                    <button id="spinBtn" class="btn primary full-width spin-cta-btn">
+                        <span class="btn-icon">🎲</span> SPIN THE ROULETTE
+                    </button>
+                    <button id="nextRoundBtn" class="btn secondary full-width hidden mt-10">
+                        🔄 Next Betting Round
+                    </button>
+                </div>
+
+                <!-- Betting Board -->
+                <div class="roulette-betting-board glass glass-gold">
+                    
+                    <!-- Chip Value Selector -->
+                    <div class="chip-selector-bar">
+                        <span class="section-label">CHIP VALUE:</span>
+                        <div class="chips-flex" id="chipsSelectorGroup">
+                            <button class="chip-token" data-amount="25">25</button>
+                            <button class="chip-token active" data-amount="50">50</button>
+                            <button class="chip-token" data-amount="100">100</button>
+                            <button class="chip-token" data-amount="250">250</button>
+                            <button class="chip-token" data-amount="500">500</button>
+                        </div>
+                    </div>
+
+                    <!-- Outside Bets (Colors, Parity, Range) -->
+                    <div class="outside-bets-grid">
+                        <button class="bet-btn bet-red" data-type="color" data-value="red">
+                            <span class="bet-name">🔴 RED</span>
+                            <span class="bet-odds">2x</span>
+                            <span class="bet-current-amount" id="betAmount-color-red">0</span>
+                        </button>
+                        <button class="bet-btn bet-black" data-type="color" data-value="black">
+                            <span class="bet-name">⚫ BLACK</span>
+                            <span class="bet-odds">2x</span>
+                            <span class="bet-current-amount" id="betAmount-color-black">0</span>
+                        </button>
+                        <button class="bet-btn bet-even" data-type="parity" data-value="even">
+                            <span class="bet-name">EVEN</span>
+                            <span class="bet-odds">2x</span>
+                            <span class="bet-current-amount" id="betAmount-parity-even">0</span>
+                        </button>
+                        <button class="bet-btn bet-odd" data-type="parity" data-value="odd">
+                            <span class="bet-name">ODD</span>
+                            <span class="bet-odds">2x</span>
+                            <span class="bet-current-amount" id="betAmount-parity-odd">0</span>
+                        </button>
+                        <button class="bet-btn bet-low" data-type="range" data-value="low">
+                            <span class="bet-name">1 - 18</span>
+                            <span class="bet-odds">2x</span>
+                            <span class="bet-current-amount" id="betAmount-range-low">0</span>
+                        </button>
+                        <button class="bet-btn bet-high" data-type="range" data-value="high">
+                            <span class="bet-name">19 - 36</span>
+                            <span class="bet-odds">2x</span>
+                            <span class="bet-current-amount" id="betAmount-range-high">0</span>
+                        </button>
+                        <button class="bet-btn bet-zero" data-type="number" data-value="0">
+                            <span class="bet-name">🟢 ZERO (0)</span>
+                            <span class="bet-odds">36x</span>
+                            <span class="bet-current-amount" id="betAmount-number-0">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Straight-up Numbers 1-36 Selector -->
+                    <div class="inside-bets-accordion">
+                        <button class="accordion-toggle-btn" id="toggleNumberGridBtn" type="button">
+                            <span>🎯 Straight-up Numbers (0-36) — <strong>36x Payout!</strong></span>
+                            <span id="accordionArrow">▼</span>
+                        </button>
+                        <div id="numberBetsGrid" class="numbers-grid hidden">
+                            <!-- Injected 1-36 buttons via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Bet Actions Bar -->
+                    <div class="bet-actions-row">
+                        <div class="total-bet-display">
+                            <span>MY BETS:</span>
+                            <strong id="myTotalBetText">0 CHIPS</strong>
+                        </div>
+                        <div class="bet-action-btns">
+                            <button id="clearBetsBtn" class="btn secondary sm">Clear Bets</button>
+                            <button id="rebuyChipsBtn" class="btn primary sm hidden">+ Re-buy 500</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Leaderboard & Active Player Bets -->
+                <div class="roulette-players-section glass mt-15">
+                    <div class="section-header">
+                        <h3>Players & Live Bets</h3>
+                        <span class="badge-counter" id="tablePlayersCount">0 PLAYERS</span>
+                    </div>
+                    <div id="roulettePlayersList" class="roulette-players-grid">
+                        <!-- Rendered players, chips, and placed bets -->
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <!-- Avalon Game View -->
+    <!-- ==========================================
+         AVALON GAME VIEW
+         ========================================== -->
     <div id="avalonGame" class="view">
         <div class="game-header">
-            <span class="room-indicator">Room: <span id="avalonRoomCode"></span></span>
-            <div style="display: flex; gap: 10px;">
-                <button id="restartAvalonBtn" class="btn sm secondary hidden">Restart</button>
-                <button id="leaveAvalonBtn" class="btn sm danger">Leave</button>
-            </div>
+            <span class="room-indicator">TABLE: <span id="avalonRoomCode"></span></span>
+            <button id="leaveAvalonBtn" class="btn sm danger">Leave</button>
         </div>
         <div class="game-area" id="avalonGameArea">
             <!-- Dynamic UI injected by avalon-ui.js based on phase -->
         </div>
     </div>
 
-    <!-- About Us Page (Org Chart) -->
-    <div id="about" class="view with-nav">
-        <header class="header">
-            <h2>HighTable Organization</h2>
-        </header>
 
-        <div class="org-container">
-            <!-- Organization Tree (Row 1 & 2) -->
-            <div class="org-tree">
-                <!-- Row 1: Founders & Alumni -->
-                <div class="org-row">
-                    <div class="profile-node">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-role">Founder Left</div>
-                        <div class="profile-name">Ambron Recildo De Zevar Sebin</div>
-                        <div class="org-drop-line"></div>
-                    </div>
 
-                    <div class="profile-node" style="opacity: 0.7;">
-                        <div class="profile-circle" style="border-color: #888; color: #888;"><svg viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-role" style="color: #888;">Alumni</div>
-                        <div class="profile-name">Andreas Aoudrey James</div>
-                    </div>
-
-                    <div class="profile-node">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-role">Founder Right</div>
-                        <div class="profile-name">Arlonso Nazarius</div>
-                        <div class="org-drop-line"></div>
-                    </div>
-                </div>
-
-                <!-- Connector to Row 2 -->
-                <div class="org-connector"></div>
-
-                <!-- Row 2: OG -->
-                <div class="org-row">
-                    <div class="profile-node">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-role">OG</div>
-                        <div class="profile-name">Cristopher Fenner L.Bansing</div>
-                    </div>
-                    <div class="profile-node">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-role">OG</div>
-                        <div class="profile-name">Bradley Balan Anak Jackson</div>
-                    </div>
-                    <div class="profile-node">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-role">OG</div>
-                        <div class="profile-name">Eltonjohn Anthony</div>
-                    </div>
-                    <div class="profile-node">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-role">OG</div>
-                        <div class="profile-name">Ervin Moses Spencer</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Row 3: Members -->
-            <div class="org-list-section">
-                <h3>Members</h3>
-                <div class="org-list">
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Alven</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Bryann Kent Linus</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Christwell</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Dominic Russel Anak Bujan</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Endrick Ryan Meyrick</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Ezra</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Hamilton</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Hildiey Bin Galabok @ Henry</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Jordan</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Jovenero Kousi</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Malcolm Steward Anak Jinbai</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Nelson</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Paydrol Anak Apeng</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Philip Jonathan</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Randall Vince Ronney</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Stevclyarren Paulus</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Fabian</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Hillary</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Ken</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Schazzler Sergus</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Aylvin</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Dellian Mesanis</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Dominic Matheus Jimi</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Effel Vin Desent Lausin</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">Hessel Gisang</div>
-                    </div>
-                    <div class="org-list-item">
-                        <div class="profile-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg></div>
-                        <div class="profile-name">William Lulin</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bottom Navigation -->
-    <nav id="bottomNav" class="bottom-nav hidden">
-        <button class="nav-item active" id="navHome">
-            <span class="icon">
-                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-            </span>
-            <span>Home</span>
-        </button>
-        <button class="nav-item" id="navAbout">
-            <span class="icon">
-                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-            </span>
-            <span>Organization</span>
-        </button>
-    </nav>
-
+    <!-- ==========================================
+         MODALS & DIALOGS
+         ========================================== -->
+    <!-- Custom Modal -->
     <div id="customModal" class="modal-overlay hidden">
-        <div class="modal-content glass">
+        <div class="modal-content glass glass-gold">
             <h3 id="modalTitle">Alert</h3>
             <div id="modalBody" class="modal-body-content">Message goes here</div>
-            <button id="modalClose" class="btn primary mt-20">Close</button>
+            <button id="modalClose" class="btn primary full-width mt-10">Got It</button>
         </div>
     </div>
 
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal-overlay hidden">
+        <div class="modal-content glass glass-gold">
+            <h3>Player Profile</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 15px;">Customize your display name at the High Table.</p>
+            <input type="text" id="editPlayerNameInput" placeholder="Your Name" maxlength="20">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button id="cancelProfileBtn" class="btn secondary" style="flex: 1;">Cancel</button>
+                <button id="saveProfileBtn" class="btn primary" style="flex: 1;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Massive Alert -->
     <div id="massiveAlert" class="massive-alert hidden">
         <div class="alert-content">
             <h1 id="massiveAlertText">YOU LOST</h1>
@@ -692,33 +544,32 @@
         </div>
     </div>
 
+    <!-- Loser Animation Overlay -->
     <div id="loserAnimationOverlay" class="massive-alert hidden" style="flex-direction: column;">
-        <div id="loserAnimProfilePic" class="profile-circle"
-            style="width: 120px; height: 120px; border-width: 2px; border-color: var(--accent-color); margin-bottom: 20px; font-size: 3rem; background-color: #222; box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);">
-        </div>
+        <div id="loserAnimProfilePic" class="player-avatar-circle" style="width: 110px; height: 110px; border-width: 4px; border-color: var(--crimson); margin-bottom: 20px; font-size: 2.5rem; background-color: #1e2433;"></div>
         <div class="alert-content text-center">
-            <h1 id="loserAnimNameText" style="color: #fff; font-size: 3rem; word-break: break-word; letter-spacing: 2px;">PLAYER LOST</h1>
+            <h1 id="loserAnimNameText" style="color: var(--crimson); font-size: 2.8rem; word-break: break-word;">PLAYER LOST</h1>
             <p id="loserAnimReasonSub" style="font-size: 1.2rem;">Lost Deathmatch.</p>
             <button id="closeLoserAnimBtn" class="btn primary mt-20">Continue</button>
         </div>
     </div>
 
+    <!-- Adjust Turn Order Modal -->
     <div id="adjustPositionModal" class="modal-overlay hidden">
-        <div class="modal-content glass">
+        <div class="modal-content glass glass-gold">
             <h3>Adjust Turn Order</h3>
             <ul id="draggablePlayerList" class="draggable-list mt-10">
                 <!-- Draggable items injected here -->
             </ul>
-            <button id="shuffleTurnOrderBtn" class="btn secondary full-width mt-10" style="background-color: #555;">🔀 Shuffle Order</button>
-            <button id="saveTurnOrderBtn" class="btn primary full-width mt-10">Save Order</button>
+            <button id="saveTurnOrderBtn" class="btn primary full-width mt-15">Save Order</button>
             <button id="cancelTurnOrderBtn" class="btn secondary full-width mt-10">Cancel</button>
         </div>
     </div>
 
-    <script type="module" src="firebase-config.js?v=32"></script>
-    <script type="module" src="app.js?v=33"></script>
-    <script type="module" src="avalon-ui.js?v=32"></script>
-    <script type="module" src="bigtwo.js?v=1"></script>
+    <!-- Scripts -->
+    <script type="module" src="firebase-config.js?v=41"></script>
+    <script type="module" src="app.js?v=41"></script>
+    <script type="module" src="avalon-ui.js?v=41"></script>
 </body>
 
 </html>

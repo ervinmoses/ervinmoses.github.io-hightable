@@ -1,5 +1,6 @@
 import {
     startAvalonGame,
+    beginNightPhase,
     proposeLeader,
     submitTeam,
     submitPublicVote,
@@ -9,14 +10,9 @@ import {
     assassinate,
     resetAvalonGame,
     QUEST_REQUIREMENTS,
-    continueQuestResult,
-    inspectLotl,
-    finishLotl,
-    setPlayerReady,
-    checkAllReady,
-    beginNightPhase,
-    updatePlayerAdjustment
-} from './avalon.js?v=29';
+    continueQuestResult
+} from './avalon.js?v=40';
+import { playYourTurnAlert } from './sound.js?v=40';
 
 const avalonGameArea = document.getElementById('avalonGameArea');
 let currentInterval = null;
@@ -24,6 +20,26 @@ let currentInterval = null;
 // Store role & myId across renders so the persistent mini-card works
 let _myRole = null;
 let _myId = null;
+let _lastAvalonTurnKey = null;
+
+function checkAvalonTurnAlert(state, myId) {
+    if (!state || !myId) return;
+    let turnKey = null;
+    if (state.phase === 'team_building' && state.leaderId === myId) {
+        turnKey = `leader_${state.round}_${state.failedVotes}`;
+    } else if (state.phase === 'public_voting' && (!state.votes || !state.votes[myId])) {
+        turnKey = `pubvote_${state.round}_${state.failedVotes}`;
+    } else if (state.phase === 'quest_voting' && state.proposedTeam?.includes(myId) && (!state.questVotes || !state.questVotes[myId])) {
+        turnKey = `questvote_${state.round}`;
+    } else if (state.phase === 'assassination' && _myRole === 'assassin') {
+        turnKey = 'assassination';
+    }
+
+    if (turnKey && turnKey !== _lastAvalonTurnKey) {
+        playYourTurnAlert();
+    }
+    _lastAvalonTurnKey = turnKey;
+}
 
 // Helper to get asset paths
 const getAsset = (name) => `./assets/avalon/${name}.jpg`;
@@ -67,6 +83,9 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
         _myRole = state.roles[myId];
     }
 
+    // Alert if it is player's turn to act in Avalon
+    checkAvalonTurnAlert(state, myId);
+
     let html = '';
 
     // Persistent role mini-card (only for non-host players with a role, from team_building onwards)
@@ -75,20 +94,14 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
         html += renderMiniRoleCard(_myRole);
     }
 
-    // Scoreboard (show in all phases except setup, reveal_roles & setup_order)
-    if (!['setup', 'reveal_roles', 'setup_order'].includes(state.phase)) {
+    // Scoreboard (show in all phases except setup & reveal_roles)
+    if (!['setup', 'reveal_roles'].includes(state.phase)) {
         html += renderScoreboard(state, players);
     }
 
     switch (state.phase) {
         case 'setup':
             html += renderSetup(isHost, players);
-            break;
-        case 'player_adjustment':
-            html += renderPlayerAdjustment(state, isHost, players, myId);
-            break;
-        case 'countdown':
-            html += renderCountdown(state, isHost);
             break;
         case 'reveal_roles':
             html += renderRevealRoles(state, isHost, myId);
@@ -101,15 +114,14 @@ window.updateAvalonUI = (state, players, myId, isHost, currentRoom) => {
             break;
         case 'public_voting':
             html += renderPublicVoting(state, players, isHost, myId);
+            if (isHost) checkPublicVotesComplete(state);
             break;
         case 'quest_voting':
             html += renderQuestVoting(state, players, isHost, myId);
+            if (isHost) checkQuestVotesComplete(state);
             break;
         case 'assassination':
             html += renderAssassination(state, players, myId, isHost);
-            break;
-        case 'lotl_phase':
-            html += renderLotlPhase(state, players, isHost, myId);
             break;
         case 'quest_result':
             html += renderQuestResult(state, players, isHost);
@@ -146,7 +158,7 @@ function renderMiniRoleCard(role) {
 // SCOREBOARD
 // ========================
 function renderScoreboard(state, players) {
-    const playingCount = players ? Object.keys(players).length : 0;
+    const playingCount = players ? Object.keys(players).filter(id => !players[id].isHost).length : 0;
     let qResults = state.questResults || [];
     const currentQuest = state.scores?.currentQuest ?? 0;
 
@@ -156,19 +168,17 @@ function renderScoreboard(state, players) {
         const needs2Fails = playingCount >= 7 && (i === 3 || i === 4);
         let bg = 'rgba(255,255,255,0.1)';
         let icon = '';
-        let nodeClass = 'avalon-quest-node';
         if (qResults[i]) {
-            bg = qResults[i].failed ? 'rgba(198,40,40,0.8)' : 'rgba(21,101,192,0.8)';
-            icon = qResults[i].failed ? '⚔' : '🛡';
+            bg = qResults[i].failed ? '#c62828' : '#1565c0';
+            icon = qResults[i].failed ? '✕' : '✓';
         } else if (i === currentQuest) {
-            bg = 'rgba(212,175,55,0.2)';
-            icon = '👑';
-            nodeClass += ' active';
+            bg = 'rgba(255,200,0,0.3)';
+            icon = '►';
         }
         circles += `
-            <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                <div class="${nodeClass}" style="width:40px; height:40px; border-radius:50%; background:${bg}; display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:#fff; border: ${i === currentQuest ? '2px solid gold' : '1px solid rgba(255,255,255,0.2)'};">${icon}</div>
-                <span style="font-size:0.7rem; color:rgba(255,255,255,0.6); font-weight:bold;">${req}${needs2Fails ? '★' : ''}</span>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                <div style="width:36px; height:36px; border-radius:50%; background:${bg}; display:flex; align-items:center; justify-content:center; font-size:0.9rem; color:#fff; border: ${i === currentQuest ? '2px solid gold' : '1px solid rgba(255,255,255,0.2)'};">${icon}</div>
+                <span style="font-size:0.6rem; color:rgba(255,255,255,0.5);">${req}${needs2Fails ? '★' : ''}</span>
             </div>`;
     }
 
@@ -182,7 +192,7 @@ function renderScoreboard(state, players) {
                 <span style="font-size:0.7rem; color:rgba(255,255,255,0.4);">★=2 fails needed</span>
                 <span style="color:#ef5350; font-weight:bold; font-size:0.85rem;">⚔ Evil: ${evil}</span>
             </div>
-            <div class="avalon-quest-track">${circles}</div>
+            <div style="display:flex; justify-content:space-around;">${circles}</div>
             ${state.failsTracker > 0 ? `<p style="text-align:center; color:#ef5350; font-size:0.75rem; margin-top:8px;">⚠ Rejected Teams: ${state.failsTracker}/5</p>` : ''}
         </div>
     `;
@@ -192,22 +202,21 @@ function renderScoreboard(state, players) {
 // PHASE 1: SETUP
 // ========================
 function renderSetup(isHost, players) {
-    const pCount = Object.values(players).length;
+    const pCount = Object.values(players).filter(p => !p.isHost).length;
     let pList = `<ul style="list-style:none; margin:0; padding:0;">`;
     Object.values(players).forEach(p => {
-        pList += `<li style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.9rem;">👤 ${p.name} ${p.isHost ? '👑 (Host)' : ''}</li>`;
+        if (!p.isHost) pList += `<li style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.9rem;">👤 ${p.name}</li>`;
     });
     pList += `</ul>`;
 
     if (isHost) {
-        // We now allow starting with >= 1 because bots will auto-fill to 5
-        const ready = pCount >= 1 && pCount <= 14;
+        const ready = pCount >= 5 && pCount <= 14;
         return `
             <div class="glass text-center">
                 <h2 style="margin-bottom:6px;">⚔ Avalon Setup</h2>
-                <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Roles auto-assigned. Bots will fill if under 5 players.</p>
+                <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Roles auto-assigned by player count. Host does not play.</p>
                 <div style="margin:16px 0; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px;">
-                    <h4 style="color:${ready ? '#4fc3f7' : '#ef5350'}; margin-bottom:10px;">Players: ${pCount} ${ready ? '✓ Ready' : '(Need 1–14)'}</h4>
+                    <h4 style="color:${ready ? '#4fc3f7' : '#ef5350'}; margin-bottom:10px;">Players: ${pCount} ${ready ? '✓ Ready' : '(Need 5–14)'}</h4>
                     ${pList}
                 </div>
                 <button id="btnStartAvalon" class="btn primary full-width mt-10" ${ready ? '' : 'disabled'}>Start Game →</button>
@@ -221,147 +230,56 @@ function renderSetup(isHost, players) {
                     <h4 style="color:var(--accent-color); margin-bottom:10px;">Players: ${pCount}</h4>
                     ${pList}
                 </div>
-        </div>`;
+            </div>`;
     }
-}
-
-// ========================
-// PHASE 1.5: PLAYER ADJUSTMENT
-// ========================
-function renderPlayerAdjustment(state, isHost, players, myId) {
-    let pListHTML = '';
-    const turnOrder = state.turnOrder || [];
-    
-    // Sort logic for display based on turnOrder
-    turnOrder.forEach((id, idx) => {
-        const p = players[id];
-        if (!p) return;
-        const isReady = state.playerReadyStatus?.[id] || p.isBot;
-        const readyIcon = isReady ? '<span style="color:#4fc3f7">✓ Ready</span>' : '<span style="color:rgba(255,255,255,0.4)">Waiting...</span>';
-        
-        let controls = '';
-        if (isHost) {
-            controls = `
-                <div style="display:flex; gap:5px;">
-                    <button class="btn secondary sm order-up" data-idx="${idx}" style="padding:4px 8px;">▲</button>
-                    <button class="btn secondary sm order-down" data-idx="${idx}" style="padding:4px 8px;">▼</button>
-                </div>
-            `;
-        }
-
-        pListHTML += `
-            <div class="draggable-item" data-id="${id}" style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.1);">
-                <span><strong style="color:var(--accent-color);">${idx + 1}.</strong> ${p.name} ${readyIcon}</span>
-                ${controls}
-            </div>
-        `;
-    });
-
-    const lotlOn = state.lotlEnabled ? 'checked' : '';
-    let hostControls = '';
-    if (isHost) {
-        hostControls = `
-            <div style="margin:16px 0; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px; text-align:left;">
-                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                    <input type="checkbox" id="chkLotl" class="chk-team" ${lotlOn}>
-                    <strong>Enable Lady of the Lake</strong>
-                </label>
-                <p style="font-size:0.75rem; color:rgba(255,255,255,0.5); margin-top:4px;">When on, the last player receives the Lady of the Lake token to inspect another player's loyalty.</p>
-            </div>
-        `;
-    } else {
-        hostControls = state.lotlEnabled 
-            ? `<div style="margin:16px 0; color:#4fc3f7; font-size:0.85rem;">💧 Lady of the Lake is ENABLED</div>`
-            : `<div style="margin:16px 0; color:rgba(255,255,255,0.5); font-size:0.85rem;">💧 Lady of the Lake is DISABLED</div>`;
-    }
-    
-    const myReady = state.playerReadyStatus?.[myId];
-    const readyBtn = myReady
-        ? `<button class="btn secondary full-width mt-10" disabled>Waiting for others...</button>`
-        : `<button id="btnPlayerReady" class="btn primary full-width mt-10">I am Ready</button>`;
-
-    return `
-        <div class="glass text-center">
-            <h2 style="margin-bottom:6px;">⚔ Setup Roles & Order</h2>
-            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">${isHost ? 'Adjust the player order (Leader passes sequentially).' : 'Host is preparing the game...'}</p>
-            
-            ${hostControls}
-            
-            <div style="margin:16px 0; background:rgba(0,0,0,0.3); border-radius:8px; padding:12px;">
-                <h4 style="color:var(--accent-color); margin-bottom:10px;">Player Turn Order</h4>
-                <div id="avalonSortableList" style="text-align:left;">
-                    ${pListHTML}
-                </div>
-            </div>
-            
-            ${readyBtn}
-        </div>`;
-}
-
-// ========================
-// PHASE 1.8: COUNTDOWN
-// ========================
-function renderCountdown(state, isHost) {
-    const duration = Math.ceil(((state.countdownEndTime || Date.now()) - Date.now()) / 1000);
-    
-    currentInterval = setInterval(() => {
-        const remain = Math.max(1, Math.ceil(((state.countdownEndTime || Date.now()) - Date.now()) / 1000));
-        const el = document.getElementById('avalonCountdown');
-        if (el) el.textContent = remain;
-    }, 200);
-
-    return `
-        <div class="glass text-center" style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:400px; background:#000;">
-            <h2 style="color:#fff; margin-bottom:20px;">Get Ready!</h2>
-            <div id="avalonCountdown" style="font-size:6rem; font-weight:bold; color:var(--accent-color);">${Math.max(1, duration)}</div>
-        </div>
-    `;
 }
 
 // ========================
 // PHASE 2: REVEAL ROLES
 // ========================
 function renderRevealRoles(state, isHost, myId) {
+    if (isHost) {
+        return `
+            <div class="glass text-center">
+                <h2>🌙 Roles Distributed</h2>
+                <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">All players are viewing their roles. When everyone is ready, begin the Night Phase so players can see their night information.</p>
+                <div style="margin:20px 0; padding:16px; background:rgba(0,0,0,0.3); border-radius:8px;">
+                    <p style="font-size:0.85rem; color:rgba(255,255,255,0.5);">ℹ Night Phase reveals:</p>
+                    <ul style="text-align:left; font-size:0.8rem; color:rgba(255,255,255,0.5); margin:8px 0 0 16px; line-height:1.8;">
+                        <li>Merlin sees Evil (not Mordred)</li>
+                        <li>Percival sees Merlin & Morgana</li>
+                        <li>Evil see each other (not Oberon)</li>
+                    </ul>
+                </div>
+                <button id="btnBeginNight" class="btn primary full-width">Begin Night Phase 🌙</button>
+            </div>`;
+    }
+
     const myRole = state.roles?.[myId];
     if (!myRole) return `<div class="glass text-center"><p>Loading your role...</p></div>`;
 
     const isGood = GOOD_ROLES.includes(myRole);
-    // Use very dark monochrome colors to avoid light leaking when playing in dark
-    const teamColor = isGood ? '#1c3d5a' : '#4a1515';
-    const textHighlight = isGood ? '#63b3ed' : '#f56565';
+    const teamColor = isGood ? '#4fc3f7' : '#ef5350';
     const teamLabel = isGood ? '🛡 Good Team' : '⚔ Evil Team';
     const desc = ROLE_DESC[myRole] || '';
 
-    // Next phase is night phase. We'll add a button here for host to advance, or anyone if host is a player
-    let advanceBtn = '';
-    if (isHost) {
-        advanceBtn = `<button id="btnBeginNightPhase" class="btn primary full-width mt-20" style="background:#222; border-color:#444;">Host: Begin Night Phase</button>`;
-    }
-
     return `
-        <div class="glass text-center" style="background-color: #000; border: none; min-height: 80vh;">
-            <h2 style="color: #444;">🌙 Your Role</h2>
-            <p style="color:rgba(255,255,255,0.2); font-size:0.85rem;">Keep this secret! <strong>Tap and hold</strong> the card to reveal.</p>
-            <div id="roleCardContainer" class="avalon-flip-container" style="filter: brightness(0.7);">
-                <div class="avalon-flip-inner">
-                    <div class="avalon-flip-front" style="background: #050505; border: 1px solid #222; color: #333;">
-                        ?
-                        <span style="font-size:0.7rem; color:rgba(255,255,255,0.1); margin-top:8px;">TAP & HOLD</span>
-                    </div>
-                    <div class="avalon-flip-back" style="background: ${teamColor}; border: 1px solid #111;">
-                        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%;">
-                            <h3 style="color:${textHighlight}; font-size:1.5rem; margin:0;">${ROLE_LABEL[myRole]}</h3>
-                            <img src="${getAsset(myRole)}" style="width:80%; margin-top:10px; border-radius: 8px; filter: grayscale(50%) brightness(0.6);" alt="${myRole}">
-                        </div>
-                    </div>
+        <div class="glass text-center">
+            <h2>🌙 Your Role</h2>
+            <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">Keep this secret! <strong>Tap and hold</strong> the card to reveal.</p>
+            <div id="roleCardContainer" style="margin:20px auto; position:relative; width:200px; height:280px; user-select:none; cursor:pointer;">
+                <div id="roleCardBack" style="position:absolute; top:0; left:0; width:200px; height:280px; background:linear-gradient(135deg,#2a2a4a,#1a1a2e); border-radius:14px; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#888; font-size:5rem; font-weight:bold; box-shadow:0 8px 24px rgba(0,0,0,0.6); border:2px solid rgba(255,255,255,0.15);">
+                    ?
+                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.3); margin-top:8px;">HOLD TO REVEAL</span>
                 </div>
+                <img id="roleCardFront" src="${getAsset(myRole)}" class="hidden" style="position:absolute; top:0; left:0; width:200px; height:280px; border-radius:14px; object-fit:cover; box-shadow:0 8px 24px rgba(0,0,0,0.6);" alt="${myRole}">
             </div>
-            <div id="roleDescPanel" class="hidden" style="transition: opacity 0.3s; margin-top:14px; padding:14px 16px; background:#050505; border-radius:10px; border:1px solid #222; text-align:left;">
-                <p style="color:${textHighlight}; font-weight:bold; font-size:0.85rem; margin-bottom:6px;">${ROLE_LABEL[myRole]} — ${teamLabel}</p>
-                <p style="color:rgba(255,255,255,0.4); font-size:0.82rem; line-height:1.5; margin:0;">${desc}</p>
+            <div id="roleDescPanel" class="hidden" style="margin-top:14px; padding:14px 16px; background:rgba(0,0,0,0.55); border-radius:10px; border:1px solid ${teamColor}40; text-align:left;">
+                <p style="color:${teamColor}; font-weight:bold; font-size:0.85rem; margin-bottom:6px;">${ROLE_LABEL[myRole]} — ${teamLabel}</p>
+                <p style="color:rgba(255,255,255,0.75); font-size:0.82rem; line-height:1.5; margin:0;">${desc}</p>
             </div>
-            <p id="roleHoldHint" style="color:rgba(255,255,255,0.2); font-size:0.75rem; margin-top:10px;">Hold card to see role &amp; description</p>
-            ${advanceBtn}
+            <p id="roleHoldHint" style="color:rgba(255,255,255,0.35); font-size:0.75rem; margin-top:10px;">Hold card to see role &amp; description</p>
+            <p style="color:rgba(255,255,255,0.25); font-size:0.7rem; margin-top:4px;">Wait for Host to begin Night Phase</p>
         </div>`;
 }
 
@@ -378,8 +296,7 @@ function renderNightPhase(state, players, myId, isHost) {
             if (el) el.textContent = remain;
         }, 200);
         return `
-            <div class="avalon-night-overlay"></div>
-            <div class="glass text-center" style="position:relative; z-index:100; border:2px solid rgba(100,100,200,0.5);">
+            <div class="glass text-center" style="border:2px solid rgba(100,100,200,0.5);">
                 <h2 class="text-danger">🌙 NIGHT PHASE</h2>
                 <p style="color:rgba(255,255,255,0.6);">Players are receiving their night information.</p>
                 <p style="margin-top:16px;">Transitioning in <strong id="nightTimer">${Math.max(0, nightDuration)}</strong>s...</p>
@@ -431,8 +348,7 @@ function renderNightPhase(state, players, myId, isHost) {
     }, 200);
 
     return `
-        <div class="avalon-night-overlay"></div>
-        <div class="glass text-center" style="position:relative; z-index:100; border:2px solid rgba(100,100,200,0.5);">
+        <div class="glass text-center" style="border:2px solid rgba(100,100,200,0.5);">
             <h2 class="text-danger">🌙 NIGHT PHASE</h2>
             <p style="color:rgba(255,255,255,0.5); font-size:0.8rem;">Closing in <strong id="nightTimer">${Math.max(0, nightDuration)}</strong>s — memorise this!</p>
             <div style="margin:16px 0; padding:16px; background:rgba(0,0,0,0.85); border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
@@ -448,7 +364,7 @@ function renderNightPhase(state, players, myId, isHost) {
 // ========================
 function renderTeamBuilding(state, players, isHost, myId) {
     const leaderId = state.roundLeader;
-    const playingCount = Object.keys(players).length;
+    const playingCount = Object.keys(players).filter(id => !players[id].isHost).length;
     const req = (QUEST_REQUIREMENTS[playingCount] || [])[state.scores?.currentQuest ?? 0] || '?';
     const questNum = (state.scores?.currentQuest ?? 0) + 1;
 
@@ -457,21 +373,10 @@ function renderTeamBuilding(state, players, isHost, myId) {
     Object.keys(players).forEach(id => {
         if (players[id].isHost) return;
         const isLeader = id === leaderId;
-        const fails = state.failsTracker || 0;
-        let pouchHtml = '';
-        if (isLeader) {
-            pouchHtml = `
-                <div style="position:absolute; top:-15px; right:-10px; width:35px; height:35px;">
-                    <img src="./assets/avalon/pouch.jpg" style="width:100%; height:100%; border-radius:50%; object-fit:cover; box-shadow:0 2px 4px rgba(0,0,0,0.8);">
-                    ${fails > 0 ? `<div style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; border:1px solid white;">${fails}</div>` : ''}
-                </div>
-            `;
-        }
-        
         pGrid += `
-            <div class="avalon-badge" style="position:relative; background:${isLeader ? 'rgba(255,200,0,0.2)' : ''}; border-color:${isLeader ? 'gold' : ''}; pointer-events: none;">
-                ${pouchHtml}
-                <p style="margin:0; font-size:0.85rem; font-weight:bold; color:${isLeader ? 'gold' : '#fff'};">${players[id].name}</p>
+            <div style="background:${isLeader ? 'rgba(255,200,0,0.2)' : 'rgba(255,255,255,0.05)'}; border:1px solid ${isLeader ? 'gold' : 'rgba(255,255,255,0.1)'}; border-radius:8px; padding:8px; text-align:center; position:relative;">
+                ${isLeader ? `<span style="position:absolute;top:-8px;right:-4px;font-size:1rem;">👑</span>` : ''}
+                <p style="margin:0; font-size:0.8rem; font-weight:bold; color:${isLeader ? 'gold' : '#fff'};">${players[id].name}</p>
             </div>`;
     });
     pGrid += `</div>`;
@@ -481,21 +386,31 @@ function renderTeamBuilding(state, players, isHost, myId) {
 
     if (!leaderId) {
         if (isHost) {
-            controls = `<p style="color:rgba(255,255,255,0.4); margin-top:16px; font-size:0.85rem;">⏳ Assigning leader...</p>`;
+            let opts = Object.keys(players)
+                .filter(id => !players[id].isHost)
+                .map(id => `<option value="${id}">${players[id].name}</option>`).join('');
+            controls = `
+                <div class="glass mt-10">
+                    <h4 style="margin-bottom:10px;">📋 Assign Round Leader</h4>
+                    <select id="selLeader" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); border-radius:8px; color:#fff; margin-bottom:10px;">
+                        <option value="">Select player...</option>${opts}
+                    </select>
+                    <button id="btnAssignLeader" class="btn primary full-width">Assign Leader 👑</button>
+                </div>`;
         } else {
-            controls = `<p style="color:rgba(255,255,255,0.4); margin-top:16px; font-size:0.85rem;">⏳ Assigning leader...</p>`;
+            controls = `<p style="color:rgba(255,255,255,0.4); margin-top:16px; font-size:0.85rem;">⏳ Waiting for Host to assign a Leader...</p>`;
         }
     } else {
         if (!isHost && myId === leaderId) {
             // Leader sees the checkbox selection
             let chks = Object.keys(players)
-                .filter(id => !players[id].isBot)
+                .filter(id => !players[id].isHost && id !== leaderId)
                 .map(id => {
                     const alreadySelected = proposedTeam.includes(id);
                     return `
-                        <label id="lbl-${id}" class="avalon-badge ${alreadySelected ? 'selected' : ''}" style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
-                            <input type="checkbox" class="chk-team hidden" value="${id}" ${alreadySelected ? 'checked' : ''}>
-                            <span style="font-size:1rem; font-weight:bold;">${players[id].name}</span>
+                        <label id="lbl-${id}" style="display:flex; align-items:center; gap:10px; padding:10px; background:rgba(255,255,255,0.04); border-radius:6px; margin-bottom:6px; cursor:pointer; border:1px solid rgba(255,255,255,0.08);">
+                            <input type="checkbox" class="chk-team" value="${id}" ${alreadySelected ? 'checked' : ''} style="width:18px; height:18px;">
+                            <span style="font-size:0.9rem;">${players[id].name}</span>
                         </label>`;
                 }).join('');
             controls = `
@@ -533,7 +448,7 @@ function renderPublicVoting(state, players, isHost, myId) {
     const hasVoted = state.publicVotes?.[myId];
     const proposedTeam = Array.isArray(state.proposedTeam) ? state.proposedTeam : [];
     const totalVotes = Object.keys(state.publicVotes || {}).length;
-    const playingCount = Object.keys(players).length;
+    const playingCount = Object.keys(players).filter(id => !players[id].isHost).length;
 
     let teamHtml = proposedTeam.map(id =>
         `<div style="background:rgba(79,195,247,0.15); border:1px solid rgba(79,195,247,0.4); border-radius:8px; padding:8px 14px; margin:4px; display:inline-block; font-size:0.9rem;">👤 ${players[id]?.name || id}</div>`
@@ -548,11 +463,11 @@ function renderPublicVoting(state, players, isHost, myId) {
             <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:12px;">Do you approve this team?</p>
             <div style="display:flex; justify-content:space-around; gap:12px;">
                 <div style="text-align:center; flex:1;">
-                    <img src="${getAsset('approve')}" id="btnVoteApprove" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid transparent;" class="vote-card-3d">
+                    <img src="${getAsset('approve')}" id="btnVoteApprove" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid transparent; transition:border 0.2s;" class="vote-btn">
                     <p style="color:#4fc3f7; font-size:0.75rem; margin-top:4px;">APPROVE</p>
                 </div>
                 <div style="text-align:center; flex:1;">
-                    <img src="${getAsset('reject')}" id="btnVoteReject" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid transparent;" class="vote-card-3d">
+                    <img src="${getAsset('reject')}" id="btnVoteReject" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid transparent; transition:border 0.2s;" class="vote-btn">
                     <p style="color:#ef5350; font-size:0.75rem; margin-top:4px;">REJECT</p>
                 </div>
             </div>`;
@@ -592,11 +507,11 @@ function renderQuestVoting(state, players, isHost, myId) {
             <p style="color:rgba(255,255,255,0.6); font-size:0.85rem; margin-bottom:16px;">Choose your card wisely:</p>
             <div style="display:flex; justify-content:space-around; gap:12px;">
                 <div style="text-align:center; flex:1;">
-                    <img src="${getAsset('success')}" id="btnQuestSuccess" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(79,195,247,0.5);" class="vote-card-3d">
+                    <img src="${getAsset('success')}" id="btnQuestSuccess" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(79,195,247,0.5); transition:transform 0.15s;">
                     <p style="color:#4fc3f7; font-size:0.75rem; margin-top:4px;">SUCCESS</p>
                 </div>
                 <div style="text-align:center; flex:1;">
-                    <img src="${getAsset('fail')}" id="btnQuestFail" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(239,83,80,0.5);" class="vote-card-3d">
+                    <img src="${getAsset('fail')}" id="btnQuestFail" style="width:110px; cursor:pointer; border-radius:12px; border:2px solid rgba(239,83,80,0.5); transition:transform 0.15s;">
                     <p style="color:#ef5350; font-size:0.75rem; margin-top:4px;">FAIL</p>
                 </div>
             </div>`;
@@ -683,7 +598,7 @@ function renderAssassination(state, players, myId, isHost) {
     if (myRole === 'assassin') {
         // Only show good-team players (exclude known evils)
         let opts = Object.keys(players)
-            .filter(id => !players[id].isBot && id !== myId && GOOD_ROLES.includes(state.roles?.[id]))
+            .filter(id => !players[id].isHost && id !== myId && GOOD_ROLES.includes(state.roles?.[id]))
             .map(id => `<option value="${id}">${players[id].name}</option>`).join('');
 
         return `
@@ -731,7 +646,7 @@ function renderGameOver(state, isHost, players) {
         rolesHtml += `</div></div>`;
     }
 
-    let hostControls = '';
+    let hostControls = isHost ? `<button id="btnRestartAvalon" class="btn secondary full-width mt-20">🔄 Play Again</button>` : '';
 
     return `
         <div class="glass text-center" style="border:3px solid ${winColor}; background:${winBg};">
@@ -740,68 +655,6 @@ function renderGameOver(state, isHost, players) {
             ${rolesHtml}
             ${hostControls}
         </div>`;
-}
-
-// ========================
-// LADY OF THE LAKE PHASE
-// ========================
-function renderLotlPhase(state, players, isHost, myId) {
-    const holder = state.lotlHolder;
-    const holderName = players[holder]?.name || 'Unknown';
-    
-    if (isHost) {
-        return `
-            <div class="glass text-center">
-                <h3>💧 Lady of the Lake</h3>
-                <p style="color:rgba(255,255,255,0.6);">${holderName} is using the Lady of the Lake.</p>
-                <p style="color:rgba(255,255,255,0.4); margin-top:16px;">Waiting for them to select a player...</p>
-            </div>
-        `;
-    }
-
-    if (myId === holder) {
-        if (state.lotlInspected) {
-            // Show result
-            const targetRole = state.roles[state.lotlInspected];
-            const isGood = GOOD_ROLES.includes(targetRole);
-            const teamAsset = isGood ? 'blueteam' : 'redteam';
-            return `
-                <div class="glass text-center">
-                    <h3>💧 Loyalty Revealed</h3>
-                    <p style="color:rgba(255,255,255,0.6);">${players[state.lotlInspected].name}'s loyalty is:</p>
-                    <div style="margin:20px auto; width:120px; height:160px;">
-                        <img src="${getAsset(teamAsset)}" style="width:100%; height:100%; object-fit:cover; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.5);">
-                    </div>
-                    <button id="btnFinishLotl" class="btn primary full-width mt-10">End Turn (Pass Token) →</button>
-                </div>
-            `;
-        } else {
-            // Select someone
-            let chks = Object.keys(players)
-                .filter(id => !players[id].isBot && id !== holder)
-                .map(id => `
-                    <label class="avalon-badge" style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
-                        <input type="radio" name="lotlTarget" class="chk-team hidden" value="${id}">
-                        <span style="font-size:1rem; font-weight:bold;">${players[id].name}</span>
-                    </label>
-                `).join('');
-            return `
-                <div class="glass text-center">
-                    <h3>💧 Lady of the Lake</h3>
-                    <p style="color:rgba(255,255,255,0.6); font-size:0.85rem;">You hold the token. Select a player to secretly check their loyalty.</p>
-                    <div style="margin-top:16px;">${chks}</div>
-                    <button id="btnInspectLotl" class="btn primary full-width mt-10" disabled>Inspect Loyalty</button>
-                </div>
-            `;
-        }
-    } else {
-        return `
-            <div class="glass text-center">
-                <h3>💧 Lady of the Lake</h3>
-                <p style="color:rgba(255,255,255,0.6);">${holderName} is choosing someone to inspect.</p>
-            </div>
-        `;
-    }
 }
 
 // ========================
@@ -821,12 +674,14 @@ function attachEventListeners(state, players, myId, isHost) {
         const holdHint = document.getElementById('roleHoldHint');
 
         const showCard = () => {
-            roleCardContainer.classList.add('flipped');
+            front?.classList.remove('hidden');
+            back?.classList.add('hidden');
             descPanel?.classList.remove('hidden');
             if (holdHint) holdHint.style.display = 'none';
         };
         const hideCard = () => {
-            roleCardContainer.classList.remove('flipped');
+            front?.classList.add('hidden');
+            back?.classList.remove('hidden');
             descPanel?.classList.add('hidden');
             if (holdHint) holdHint.style.display = '';
             window.removeEventListener('mouseup', hideCard);
@@ -869,66 +724,11 @@ function attachEventListeners(state, players, myId, isHost) {
         }, { passive: true });
     }
 
-    const btnPlayerReady = document.getElementById('btnPlayerReady');
-    if (btnPlayerReady) {
-        btnPlayerReady.onclick = () => {
-            setPlayerReady(true);
-            if (isHost) checkAllReady(state, players);
-        };
-    }
-
-    const btnBeginNightPhase = document.getElementById('btnBeginNightPhase');
-    if (btnBeginNightPhase) {
-        btnBeginNightPhase.onclick = () => beginNightPhase();
-    }
-
-    const chkLotl = document.getElementById('chkLotl');
-    if (chkLotl && isHost) {
-        chkLotl.onchange = () => {
-            const turnOrder = Array.from(document.querySelectorAll('#avalonSortableList .draggable-item')).map(el => el.getAttribute('data-id'));
-            updatePlayerAdjustment(turnOrder, chkLotl.checked);
-        };
-    }
-
-    const sortableList = document.getElementById('avalonSortableList');
-    if (sortableList && isHost) {
-        sortableList.querySelectorAll('.order-up').forEach(btn => {
-            btn.onclick = (e) => {
-                const item = e.target.closest('.draggable-item');
-                const prev = item.previousElementSibling;
-                if (prev) {
-                    sortableList.insertBefore(item, prev);
-                    reindexList(sortableList);
-                    const turnOrder = Array.from(sortableList.querySelectorAll('.draggable-item')).map(el => el.getAttribute('data-id'));
-                    const lotlEnabled = document.getElementById('chkLotl')?.checked || false;
-                    updatePlayerAdjustment(turnOrder, lotlEnabled);
-                }
-            };
-        });
-        sortableList.querySelectorAll('.order-down').forEach(btn => {
-            btn.onclick = (e) => {
-                const item = e.target.closest('.draggable-item');
-                const next = item.nextElementSibling;
-                if (next) {
-                    sortableList.insertBefore(next, item);
-                    reindexList(sortableList);
-                    const turnOrder = Array.from(sortableList.querySelectorAll('.draggable-item')).map(el => el.getAttribute('data-id'));
-                    const lotlEnabled = document.getElementById('chkLotl')?.checked || false;
-                    updatePlayerAdjustment(turnOrder, lotlEnabled);
-                }
-            };
-        });
-    }
-
-    function reindexList(list) {
-        list.querySelectorAll('.draggable-item').forEach((item, idx) => {
-            const strong = item.querySelector('strong');
-            if (strong) strong.textContent = (idx + 1) + '.';
-        });
-    }
+    // Night phase trigger
+    const btnBeginNight = document.getElementById('btnBeginNight');
+    if (btnBeginNight) btnBeginNight.onclick = beginNightPhase;
 
     // Assign leader
-
     const btnAssignLeader = document.getElementById('btnAssignLeader');
     if (btnAssignLeader) {
         btnAssignLeader.onclick = () => {
@@ -938,7 +738,7 @@ function attachEventListeners(state, players, myId, isHost) {
     }
 
     // Team checkbox logic — dynamic disable when max reached
-    const playingCount = Object.keys(players).length;
+    const playingCount = Object.keys(players).filter(id => !players[id].isHost).length;
     const req = (QUEST_REQUIREMENTS[playingCount] || [])[state.scores?.currentQuest ?? 0] || 0;
     const checkboxContainer = document.getElementById('teamCheckboxes');
     const selCountEl = document.getElementById('selCount');
@@ -953,19 +753,12 @@ function attachEventListeners(state, players, myId, isHost) {
 
             allChks.forEach(chk => {
                 const label = chk.closest('label');
-                if (label) {
-                    if (chk.checked) {
-                        label.classList.add('selected');
-                    } else {
-                        label.classList.remove('selected');
-                    }
-                    if (!chk.checked && count >= req) {
-                        chk.disabled = true;
-                        label.classList.add('disabled');
-                    } else {
-                        chk.disabled = false;
-                        label.classList.remove('disabled');
-                    }
+                if (!chk.checked && count >= req) {
+                    chk.disabled = true;
+                    if (label) label.style.opacity = '0.4';
+                } else {
+                    chk.disabled = false;
+                    if (label) label.style.opacity = '1';
                 }
             });
 
@@ -1028,34 +821,12 @@ function attachEventListeners(state, players, myId, isHost) {
     const btnAssassinate = document.getElementById('btnAssassinate');
     if (btnAssassinate) {
         btnAssassinate.onclick = () => {
-            const target = document.querySelector('input[name="assassinTarget"]:checked')?.value;
-            if (target) assassinate(target);
-        };
-        const radios = document.querySelectorAll('input[name="assassinTarget"]');
-        radios.forEach(r => r.addEventListener('change', () => btnAssassinate.disabled = false));
-    }
-
-    // Lady of the Lake
-    const btnInspectLotl = document.getElementById('btnInspectLotl');
-    if (btnInspectLotl) {
-        const lotlRadios = document.querySelectorAll('input[name="lotlTarget"]');
-        lotlRadios.forEach(r => r.addEventListener('change', () => {
-            btnInspectLotl.disabled = false;
-            document.querySelectorAll('input[name="lotlTarget"]').forEach(i => {
-                if (i.checked) i.closest('label').classList.add('selected');
-                else i.closest('label').classList.remove('selected');
-            });
-        }));
-        btnInspectLotl.onclick = () => {
-            const selected = document.querySelector('input[name="lotlTarget"]:checked')?.value;
-            if (selected) inspectLotl(selected);
+            const val = document.getElementById('selAssassinate')?.value;
+            if (val) assassinate(val);
         };
     }
-    
-    const btnFinishLotl = document.getElementById('btnFinishLotl');
-    if (btnFinishLotl) btnFinishLotl.onclick = () => finishLotl(state);
 
     // Restart
-    const restartAvalonBtn = document.getElementById('restartAvalonBtn');
-    if (restartAvalonBtn) restartAvalonBtn.onclick = resetAvalonGame;
+    const btnRestartAvalon = document.getElementById('btnRestartAvalon');
+    if (btnRestartAvalon) btnRestartAvalon.onclick = resetAvalonGame;
 }
